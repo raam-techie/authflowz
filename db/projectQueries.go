@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-type Client struct {
+type Project struct {
 	ID           string
 	TenantID     string
 	ClientID     string
@@ -19,7 +19,7 @@ type Client struct {
 	CreatedAt    string
 }
 
-func InsertClient(ctx context.Context, tenantID, clientID, clientSecretHash, name, description, appType, authType string, redirectURIs []string) (*Client, error) {
+func InsertProject(ctx context.Context, tenantID, clientID, clientSecretHash, name, description, appType, authType string, redirectURIs []string) (*Project, error) {
 	redirectURIsJSON, err := json.Marshal(redirectURIs)
 	if err != nil {
 		return nil, err
@@ -42,16 +42,16 @@ func InsertClient(ctx context.Context, tenantID, clientID, clientSecretHash, nam
 		redirectURIsJSON,
 	)
 
-	c := &Client{}
+	p := &Project{}
 	var desc sql.NullString
 	var redirectURIsRaw []byte
-	err = row.Scan(&c.ID, &c.TenantID, &c.ClientID, &c.Name, &desc, &c.AppType, &c.AuthType, &redirectURIsRaw, &c.IsActive, &c.CreatedAt)
+	err = row.Scan(&p.ID, &p.TenantID, &p.ClientID, &p.Name, &desc, &p.AppType, &p.AuthType, &redirectURIsRaw, &p.IsActive, &p.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 
-	c.Description = desc.String
-	_ = json.Unmarshal(redirectURIsRaw, &c.RedirectURIs)
+	p.Description = desc.String
+	_ = json.Unmarshal(redirectURIsRaw, &p.RedirectURIs)
 
-	return c, nil
+	return p, nil
 }
