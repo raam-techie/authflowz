@@ -50,7 +50,12 @@ func CreateProject(ctx context.Context, req *payload.CreateProjectRequest) (*db.
 		redirectURIs = []string{}
 	}
 
-	project, err := db.InsertProject(ctx, req.TenantID, clientID, string(secretHash), req.Name, req.Description, req.AppType, req.AuthType, redirectURIs)
+	authTypes := req.AuthTypes
+	if authTypes == nil {
+		authTypes = []string{}
+	}
+
+	project, err := db.InsertProject(ctx, req.TenantID, clientID, string(secretHash), req.Name, req.Description, req.AppType, authTypes, redirectURIs)
 	if err != nil {
 		if strings.Contains(err.Error(), "projects_tenant_id_fkey") {
 			return nil, fmt.Errorf("invalid tenant id")

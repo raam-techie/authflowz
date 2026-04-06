@@ -32,7 +32,7 @@ func CreateProject(c *gin.Context) {
 			"name":         project.Name,
 			"description":  project.Description,
 			"appType":      project.AppType,
-			"authType":     project.AuthType,
+			"authTypes":    project.AuthTypes,
 			"redirectUris": project.RedirectURIs,
 			"isActive":     project.IsActive,
 			"createdAt":    project.CreatedAt,

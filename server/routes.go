@@ -21,6 +21,9 @@ func registerRoutes(v1 *gin.RouterGroup) {
 	user := v1.Group("/user")
 	{
 		user.POST("/create", handlers.CreateUser)
-		user.POST("/login", handlers.UserLogin)
+		user.POST("/emailpassword", handlers.UserLogin)
+		user.POST("/oauth/google", handlers.GoogleOAuthLogin)
+		user.POST("/otp/email/send", handlers.SendEmailOTP)
+		user.POST("/otp/email/verify", handlers.VerifyEmailOTP)
 	}
 }

@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"new-auth-service/db"
@@ -12,8 +11,6 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-var ErrNotImplemented = errors.New("not implemented")
 
 func CreateUser(ctx context.Context, req *payload.CreateUserRequest) (*db.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -54,22 +51,35 @@ func LoginUser(ctx context.Context, req *payload.UserLoginRequest) (string, erro
 		return "", fmt.Errorf("project is not active")
 	}
 
-	switch project.AuthType {
-	case "EMAIL_PASSWORD":
-		return loginEmailPassword(user, passwordHash, req)
-	case "OTP_EMAIL":
-		return "", fmt.Errorf("OTP_EMAIL auth is not yet implemented: %w", ErrNotImplemented)
-	case "OTP_PHONE":
-		return "", fmt.Errorf("OTP_PHONE auth is not yet implemented: %w", ErrNotImplemented)
-	case "OAUTH":
-		return "", fmt.Errorf("OAUTH auth is not yet implemented: %w", ErrNotImplemented)
-	case "MAGIC_LINK":
-		return "", fmt.Errorf("MAGIC_LINK auth is not yet implemented: %w", ErrNotImplemented)
-	case "SSO":
-		return "", fmt.Errorf("SSO auth is not yet implemented: %w", ErrNotImplemented)
-	default:
-		return "", fmt.Errorf("unknown auth type: %s", project.AuthType)
+	if !containsAuthType(project.AuthTypes, "EMAIL_PASSWORD") {
+		return "", fmt.Errorf("email/password auth is not enabled for this project")
 	}
+
+	return loginEmailPassword(user, passwordHash, req)
+}
+
+func SendEmailOTP(ctx context.Context, req *payload.SendOTPRequest) error {
+	// TODO: implement send OTP to email
+	return nil
+}
+
+func VerifyEmailOTP(ctx context.Context, req *payload.VerifyOTPRequest) (string, error) {
+	// TODO: implement verify OTP and return JWT token
+	return "", nil
+}
+
+func GoogleOAuthLogin(ctx context.Context, req *payload.GoogleOAuthLoginRequest) (string, error) {
+	// TODO: implement Google OAuth login
+	return "", nil
+}
+
+func containsAuthType(authTypes []string, target string) bool {
+	for _, a := range authTypes {
+		if a == target {
+			return true
+		}
+	}
+	return false
 }
 
 func loginEmailPassword(user *db.User, passwordHash string, req *payload.UserLoginRequest) (string, error) {
