@@ -1,0 +1,12 @@
+package payload
+
+type CreateUserRequest struct {
+	TenantID   string `json:"tenantId"   binding:"required"`
+	ProjectID  string `json:"projectId"  binding:"required"`
+	Name       string `json:"name"       binding:"required"`
+	Email      string `json:"email"      binding:"required,email"`
+	Password   string `json:"password"   binding:"required,min=8"`
+	Phone      string `json:"phone"`
+	Department string `json:"department"`
+	Role       string `json:"role"`
+}
