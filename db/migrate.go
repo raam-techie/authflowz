@@ -59,3 +59,21 @@ func Migrate() error {
 	log.Println("Database migration completed successfully")
 	return nil
 }
+
+func MigrateDown() error {
+	queries := []string{
+		`DROP TABLE IF EXISTS users`,
+		`DROP TABLE IF EXISTS projects`,
+		`DROP TABLE IF EXISTS tenants`,
+		`DROP SEQUENCE IF EXISTS user_uid_seq`,
+	}
+
+	for _, q := range queries {
+		if _, err := DB.Exec(q); err != nil {
+			return err
+		}
+	}
+
+	log.Println("Database migration rolled back successfully")
+	return nil
+}

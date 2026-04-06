@@ -19,6 +19,32 @@ type Project struct {
 	CreatedAt    string
 }
 
+func GetProjectByID(ctx context.Context, projectID string) (*Project, error) {
+	query := `
+		SELECT id, tenant_id, client_id, name, description, app_type, auth_type, redirect_uris, is_active, created_at
+		FROM projects
+		WHERE id = $1
+	`
+	row := DB.QueryRowContext(ctx, query, projectID)
+
+	p := &Project{}
+	var desc sql.NullString
+	var redirectURIsRaw []byte
+
+	err := row.Scan(
+		&p.ID, &p.TenantID, &p.ClientID, &p.Name, &desc,
+		&p.AppType, &p.AuthType, &redirectURIsRaw, &p.IsActive, &p.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	p.Description = desc.String
+	_ = json.Unmarshal(redirectURIsRaw, &p.RedirectURIs)
+
+	return p, nil
+}
+
 func InsertProject(ctx context.Context, tenantID, clientID, clientSecretHash, name, description, appType, authType string, redirectURIs []string) (*Project, error) {
 	redirectURIsJSON, err := json.Marshal(redirectURIs)
 	if err != nil {

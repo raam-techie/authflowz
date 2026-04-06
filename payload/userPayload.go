@@ -1,5 +1,10 @@
 package payload
 
+type UserLoginRequest struct {
+	Email    string `json:"email"    binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
 type CreateUserRequest struct {
 	TenantID   string `json:"tenantId"   binding:"required"`
 	ProjectID  string `json:"projectId"  binding:"required"`

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"new-auth-service/db"
 	"new-auth-service/payload"
@@ -51,6 +52,9 @@ func CreateProject(ctx context.Context, req *payload.CreateProjectRequest) (*db.
 
 	project, err := db.InsertProject(ctx, req.TenantID, clientID, string(secretHash), req.Name, req.Description, req.AppType, req.AuthType, redirectURIs)
 	if err != nil {
+		if strings.Contains(err.Error(), "projects_tenant_id_fkey") {
+			return nil, fmt.Errorf("invalid tenant id")
+		}
 		return nil, fmt.Errorf("failed to insert project: %w", err)
 	}
 

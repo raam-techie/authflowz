@@ -2,12 +2,14 @@ package server
 
 import (
 	"new-auth-service/db"
+	"new-auth-service/errutil"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
+	router.Use(errutil.ErrorMiddleware())
 
 	router.GET("/health", func(c *gin.Context) {
 		if err := db.DB.Ping(); err != nil {

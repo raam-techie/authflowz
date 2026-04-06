@@ -48,6 +48,34 @@ func InsertTenant(ctx context.Context, accountID, name, email, passwordHash, pho
 	return t, nil
 }
 
+func GetTenantByAccountID(ctx context.Context, accountID string) (*Tenant, string, error) {
+	query := `
+		SELECT id, account_id, name, email, phone, address, website_url, status, password_hash, created_at
+		FROM tenants
+		WHERE account_id = $1
+	`
+	row := DB.QueryRowContext(ctx, query, accountID)
+
+	t := &Tenant{}
+	var phone, address, websiteURL sql.NullString
+	var passwordHash string
+
+	err := row.Scan(
+		&t.ID, &t.AccountID, &t.Name, &t.Email,
+		&phone, &address, &websiteURL,
+		&t.Status, &passwordHash, &t.CreatedAt,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	t.Phone = phone.String
+	t.Address = address.String
+	t.WebsiteURL = websiteURL.String
+
+	return t, passwordHash, nil
+}
+
 func nullableString(s string) interface{} {
 	if s == "" {
 		return nil
