@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"new-auth-service/db"
@@ -29,4 +30,29 @@ func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (*db.Te
 	}
 
 	return tenant, nil
+}
+
+func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (string, error) {
+	tenant, passwordHash, err := db.GetTenantByAccountID(ctx, req.AccountID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("invalid credentials")
+		}
+		return "", fmt.Errorf("failed to fetch tenant: %w", err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+		return "", fmt.Errorf("invalid credentials")
+	}
+
+	if tenant.Status != "ACTIVE" {
+		return "", fmt.Errorf("tenant account is not active")
+	}
+
+	token, err := utils.GenerateTenantToken(tenant.ID, tenant.AccountID, tenant.Name, tenant.Email, tenant.Status)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return token, nil
 }

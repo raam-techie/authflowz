@@ -19,6 +19,32 @@ type User struct {
 	CreatedAt  string
 }
 
+func GetUserByEmail(ctx context.Context, email string) (*User, string, error) {
+	query := `
+		SELECT id, tenant_id, project_id, uid, name, email, phone, department, role, is_active, password_hash, created_at
+		FROM users
+		WHERE email = $1
+	`
+	row := DB.QueryRowContext(ctx, query, email)
+
+	u := &User{}
+	var phone, dept sql.NullString
+	var passwordHash string
+
+	err := row.Scan(
+		&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name, &u.Email,
+		&phone, &dept, &u.Role, &u.IsActive, &passwordHash, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	u.Phone = phone.String
+	u.Department = dept.String
+
+	return u, passwordHash, nil
+}
+
 func InsertUser(ctx context.Context, tenantID, projectID, name, email, passwordHash, phone, department, role string) (*User, error) {
 	if role == "" {
 		role = "USER"
