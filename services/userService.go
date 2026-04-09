@@ -12,13 +12,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CreateUser(ctx context.Context, req *payload.CreateUserRequest) (*db.User, error) {
+func CreateUser(ctx context.Context, req *payload.CreateUserRequest, project *db.Project) (*db.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	user, err := db.InsertUser(ctx, req.TenantID, req.ProjectID, req.Name, req.Email, string(hash), req.Phone, req.Department, req.Role)
+	user, err := db.InsertUser(ctx, project.TenantID, project.ID, req.Name, req.Email, string(hash), req.Phone, req.Department, req.Role)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert user: %w", err)
 	}
@@ -26,8 +26,12 @@ func CreateUser(ctx context.Context, req *payload.CreateUserRequest) (*db.User, 
 	return user, nil
 }
 
-func LoginUser(ctx context.Context, req *payload.UserLoginRequest) (string, error) {
-	user, passwordHash, err := db.GetUserByEmail(ctx, req.Email)
+func LoginUser(ctx context.Context, req *payload.UserLoginRequest, project *db.Project) (string, error) {
+	if !containsAuthType(project.AuthTypes, "EMAIL_PASSWORD") {
+		return "", fmt.Errorf("email/password auth is not enabled for this project")
+	}
+
+	user, passwordHash, err := db.GetUserByEmail(ctx, project.ID, req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", fmt.Errorf("invalid credentials")
@@ -39,37 +43,16 @@ func LoginUser(ctx context.Context, req *payload.UserLoginRequest) (string, erro
 		return "", fmt.Errorf("user account is not active")
 	}
 
-	project, err := db.GetProjectByID(ctx, user.ProjectID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("project not found")
-		}
-		return "", fmt.Errorf("failed to fetch project: %w", err)
-	}
-
-	if !project.IsActive {
-		return "", fmt.Errorf("project is not active")
-	}
-
-	if !containsAuthType(project.AuthTypes, "EMAIL_PASSWORD") {
-		return "", fmt.Errorf("email/password auth is not enabled for this project")
-	}
-
 	return loginEmailPassword(user, passwordHash, req)
 }
 
-func SendEmailOTP(ctx context.Context, req *payload.SendOTPRequest) error {
+func SendEmailOTP(ctx context.Context, req *payload.SendOTPRequest, project *db.Project) error {
 	// TODO: implement send OTP to email
 	return nil
 }
 
-func VerifyEmailOTP(ctx context.Context, req *payload.VerifyOTPRequest) (string, error) {
+func VerifyEmailOTP(ctx context.Context, req *payload.VerifyOTPRequest, project *db.Project) (string, error) {
 	// TODO: implement verify OTP and return JWT token
-	return "", nil
-}
-
-func GoogleOAuthLogin(ctx context.Context, req *payload.GoogleOAuthLoginRequest) (string, error) {
-	// TODO: implement Google OAuth login
 	return "", nil
 }
 

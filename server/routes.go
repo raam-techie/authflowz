@@ -2,6 +2,7 @@ package server
 
 import (
 	"new-auth-service/handlers"
+	"new-auth-service/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,11 +19,10 @@ func registerRoutes(v1 *gin.RouterGroup) {
 		project.POST("/create", handlers.CreateProject)
 	}
 
-	user := v1.Group("/user")
+	user := v1.Group("/user", middleware.ClientCredentials())
 	{
 		user.POST("/create", handlers.CreateUser)
 		user.POST("/emailpassword", handlers.UserLogin)
-		user.POST("/oauth/google", handlers.GoogleOAuthLogin)
 		user.POST("/otp/email/send", handlers.SendEmailOTP)
 		user.POST("/otp/email/verify", handlers.VerifyEmailOTP)
 	}

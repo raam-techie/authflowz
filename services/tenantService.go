@@ -45,11 +45,11 @@ func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (string, 
 		return "", fmt.Errorf("invalid credentials")
 	}
 
-	if tenant.Status != "ACTIVE" {
+	if tenant.Status != db.TenantStatusActive {
 		return "", fmt.Errorf("tenant account is not active")
 	}
 
-	token, err := utils.GenerateTenantToken(tenant.ID, tenant.AccountID, tenant.Name, tenant.Email, tenant.Status)
+	token, err := utils.GenerateTenantToken(tenant.ID, tenant.AccountID, tenant.Name, tenant.Email, string(tenant.Status))
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}

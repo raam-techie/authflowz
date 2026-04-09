@@ -1,20 +1,36 @@
 package handlers
 
 import (
+	"new-auth-service/db"
 	"new-auth-service/errutil"
+	"new-auth-service/middleware"
 	"new-auth-service/payload"
 	"new-auth-service/services"
 
 	"github.com/gin-gonic/gin"
 )
 
+func projectFromCtx(c *gin.Context) *db.Project {
+	p, exists := c.Get(middleware.ProjectContextKey)
+	if !exists {
+		panic(errutil.Internal("project context missing"))
+	}
+	project, ok := p.(*db.Project)
+	if !ok {
+		panic(errutil.Internal("invalid project context type"))
+	}
+	return project
+}
+
 func CreateUser(c *gin.Context) {
+	project := projectFromCtx(c)
+
 	var req payload.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	user, err := services.CreateUser(c.Request.Context(), &req)
+	user, err := services.CreateUser(c.Request.Context(), &req, project)
 	if err != nil {
 		panic(errutil.Internal(err.Error()))
 	}
@@ -39,12 +55,14 @@ func CreateUser(c *gin.Context) {
 }
 
 func SendEmailOTP(c *gin.Context) {
+	project := projectFromCtx(c)
+
 	var req payload.SendOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	if err := services.SendEmailOTP(c.Request.Context(), &req); err != nil {
+	if err := services.SendEmailOTP(c.Request.Context(), &req, project); err != nil {
 		panic(errutil.Internal(err.Error()))
 	}
 
@@ -56,30 +74,14 @@ func SendEmailOTP(c *gin.Context) {
 }
 
 func VerifyEmailOTP(c *gin.Context) {
+	project := projectFromCtx(c)
+
 	var req payload.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	token, err := services.VerifyEmailOTP(c.Request.Context(), &req)
-	if err != nil {
-		panic(errutil.Internal(err.Error()))
-	}
-
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
-		Message:    "Login successful",
-		Data:       []any{token},
-	})
-}
-
-func GoogleOAuthLogin(c *gin.Context) {
-	var req payload.GoogleOAuthLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(errutil.BadRequest(err.Error()))
-	}
-
-	token, err := services.GoogleOAuthLogin(c.Request.Context(), &req)
+	token, err := services.VerifyEmailOTP(c.Request.Context(), &req, project)
 	if err != nil {
 		panic(errutil.Internal(err.Error()))
 	}
@@ -92,19 +94,18 @@ func GoogleOAuthLogin(c *gin.Context) {
 }
 
 func UserLogin(c *gin.Context) {
+	project := projectFromCtx(c)
+
 	var req payload.UserLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	token, err := services.LoginUser(c.Request.Context(), &req)
+	token, err := services.LoginUser(c.Request.Context(), &req, project)
 	if err != nil {
 		msg := err.Error()
-		if msg == "invalid credentials" || msg == "user account is not active" || msg == "project is not active" || msg == "email/password auth is not enabled for this project" {
+		if msg == "invalid credentials" || msg == "user account is not active" || msg == "email/password auth is not enabled for this project" {
 			panic(errutil.Unauthorized(msg))
-		}
-		if msg == "project not found" {
-			panic(errutil.NotFound(msg))
 		}
 		panic(errutil.Internal(msg))
 	}

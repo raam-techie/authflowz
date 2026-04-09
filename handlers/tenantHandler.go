@@ -23,7 +23,7 @@ func CreateTenant(c *gin.Context) {
 		StatusCode: 201,
 		Message:    "Tenant created successfully",
 		Data: []any{map[string]any{
-			"id":        tenant.ID,
+			"tenantId":  tenant.ID,
 			"accountId": tenant.AccountID,
 			"name":      tenant.Name,
 			"email":     tenant.Email,

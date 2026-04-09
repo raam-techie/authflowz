@@ -14,7 +14,7 @@ func CreateProject(c *gin.Context) {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	project, err := services.CreateProject(c.Request.Context(), &req)
+	project, clientSecret, err := services.CreateProject(c.Request.Context(), &req)
 	if err != nil {
 		if err.Error() == "invalid tenant id" {
 			panic(errutil.NotFound(err.Error()))
@@ -29,6 +29,7 @@ func CreateProject(c *gin.Context) {
 			"id":           project.ID,
 			"tenantId":     project.TenantID,
 			"clientId":     project.ClientID,
+			"clientSecret": clientSecret,
 			"name":         project.Name,
 			"description":  project.Description,
 			"appType":      project.AppType,

@@ -29,20 +29,20 @@ func generateClientSecret() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func CreateProject(ctx context.Context, req *payload.CreateProjectRequest) (*db.Project, error) {
+func CreateProject(ctx context.Context, req *payload.CreateProjectRequest) (*db.Project, string, error) {
 	clientID, err := generateClientID()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	clientSecret, err := generateClientSecret()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	secretHash, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash client secret: %w", err)
+		return nil, "", fmt.Errorf("failed to hash client secret: %w", err)
 	}
 
 	redirectURIs := req.RedirectURIs
@@ -58,10 +58,10 @@ func CreateProject(ctx context.Context, req *payload.CreateProjectRequest) (*db.
 	project, err := db.InsertProject(ctx, req.TenantID, clientID, string(secretHash), req.Name, req.Description, req.AppType, authTypes, redirectURIs)
 	if err != nil {
 		if strings.Contains(err.Error(), "projects_tenant_id_fkey") {
-			return nil, fmt.Errorf("invalid tenant id")
+			return nil, "", fmt.Errorf("invalid tenant id")
 		}
-		return nil, fmt.Errorf("failed to insert project: %w", err)
+		return nil, "", fmt.Errorf("failed to insert project: %w", err)
 	}
 
-	return project, nil
+	return project, clientSecret, nil
 }

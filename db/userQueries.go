@@ -19,13 +19,13 @@ type User struct {
 	CreatedAt  string
 }
 
-func GetUserByEmail(ctx context.Context, email string) (*User, string, error) {
+func GetUserByEmail(ctx context.Context, projectID, email string) (*User, string, error) {
 	query := `
 		SELECT id, tenant_id, project_id, uid, name, email, phone, department, role, is_active, password_hash, created_at
 		FROM users
-		WHERE email = $1
+		WHERE project_id = $1 AND email = $2
 	`
-	row := DB.QueryRowContext(ctx, query, email)
+	row := DB.QueryRowContext(ctx, query, projectID, email)
 
 	u := &User{}
 	var phone, dept sql.NullString
