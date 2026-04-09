@@ -45,6 +45,85 @@ func GetUserByEmail(ctx context.Context, projectID, email string) (*User, string
 	return u, passwordHash, nil
 }
 
+func GetUserByID(ctx context.Context, userID string) (*User, error) {
+	query := `
+		SELECT id, tenant_id, project_id, uid, name, email, phone, department, role, is_active, created_at
+		FROM users
+		WHERE id = $1
+	`
+	row := DB.QueryRowContext(ctx, query, userID)
+
+	u := &User{}
+	var phone, dept sql.NullString
+	err := row.Scan(
+		&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name, &u.Email,
+		&phone, &dept, &u.Role, &u.IsActive, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	u.Phone = phone.String
+	u.Department = dept.String
+	return u, nil
+}
+
+func GetUserByUID(ctx context.Context, projectID, uid string) (*User, error) {
+	query := `
+		SELECT id, tenant_id, project_id, uid, name, email, phone, department, role, is_active, created_at
+		FROM users
+		WHERE project_id = $1 AND uid = $2
+	`
+	row := DB.QueryRowContext(ctx, query, projectID, uid)
+
+	u := &User{}
+	var phone, dept sql.NullString
+	err := row.Scan(
+		&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name, &u.Email,
+		&phone, &dept, &u.Role, &u.IsActive, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	u.Phone = phone.String
+	u.Department = dept.String
+	return u, nil
+}
+
+func UpsertUserAttributes(ctx context.Context, userID string, attrs map[string]string) error {
+	query := `
+		INSERT INTO user_attributes (user_id, key, value)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, key) DO UPDATE SET value = EXCLUDED.value
+	`
+	for k, v := range attrs {
+		if _, err := DB.ExecContext(ctx, query, userID, k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func GetUserAttributes(ctx context.Context, userID string) (map[string]string, error) {
+	query := `SELECT key, value FROM user_attributes WHERE user_id = $1`
+	rows, err := DB.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	attrs := make(map[string]string)
+	for rows.Next() {
+		var k, v string
+		if err := rows.Scan(&k, &v); err != nil {
+			return nil, err
+		}
+		attrs[k] = v
+	}
+	return attrs, rows.Err()
+}
+
 func InsertUser(ctx context.Context, tenantID, projectID, name, email, passwordHash, phone, department, role string) (*User, error) {
 	if role == "" {
 		role = "USER"

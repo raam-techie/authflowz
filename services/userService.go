@@ -2,8 +2,11 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"time"
 
 	"new-auth-service/db"
 	"new-auth-service/payload"
@@ -11,6 +14,11 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+func sha256Hex(s string) string {
+	h := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(h[:])
+}
 
 func CreateUser(ctx context.Context, req *payload.CreateUserRequest, project *db.Project) (*db.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -26,24 +34,75 @@ func CreateUser(ctx context.Context, req *payload.CreateUserRequest, project *db
 	return user, nil
 }
 
-func LoginUser(ctx context.Context, req *payload.UserLoginRequest, project *db.Project) (string, error) {
+func LoginUser(ctx context.Context, req *payload.UserLoginRequest, project *db.Project) (*payload.AuthTokens, error) {
 	if !containsAuthType(project.AuthTypes, "EMAIL_PASSWORD") {
-		return "", fmt.Errorf("email/password auth is not enabled for this project")
+		return nil, fmt.Errorf("email/password auth is not enabled for this project")
 	}
 
 	user, passwordHash, err := db.GetUserByEmail(ctx, project.ID, req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("invalid credentials")
+			return nil, fmt.Errorf("invalid credentials")
 		}
-		return "", fmt.Errorf("failed to fetch user: %w", err)
+		return nil, fmt.Errorf("failed to fetch user: %w", err)
 	}
 
 	if !user.IsActive {
-		return "", fmt.Errorf("user account is not active")
+		return nil, fmt.Errorf("user account is not active")
 	}
 
-	return loginEmailPassword(user, passwordHash, req)
+	return loginEmailPassword(ctx, user, passwordHash, req)
+}
+
+func RefreshAccessToken(ctx context.Context, req *payload.RefreshTokenRequest, project *db.Project) (*payload.AuthTokens, error) {
+	tokenHash := sha256Hex(req.RefreshToken)
+
+	rt, err := db.GetRefreshTokenByHash(ctx, tokenHash)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("invalid refresh token")
+		}
+		return nil, fmt.Errorf("failed to fetch refresh token: %w", err)
+	}
+
+	if rt.ProjectID != project.ID {
+		return nil, fmt.Errorf("invalid refresh token")
+	}
+
+	if time.Now().After(rt.ExpiresAt) {
+		_ = db.DeleteRefreshToken(ctx, tokenHash)
+		return nil, fmt.Errorf("refresh token expired")
+	}
+
+	if err := db.DeleteRefreshToken(ctx, tokenHash); err != nil {
+		return nil, fmt.Errorf("failed to rotate refresh token: %w", err)
+	}
+
+	user, err := db.GetUserByID(ctx, rt.UserID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	if !user.IsActive {
+		return nil, fmt.Errorf("user account is not active")
+	}
+
+	return issueTokenPair(ctx, user, project.ID)
+}
+
+func UpdateUserAttributes(ctx context.Context, uid string, req *payload.UpdateAttributesRequest, project *db.Project) error {
+	user, err := db.GetUserByUID(ctx, project.ID, uid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("user not found")
+		}
+		return fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	return db.UpsertUserAttributes(ctx, user.ID, req.Attributes)
 }
 
 func SendEmailOTP(ctx context.Context, req *payload.SendOTPRequest, project *db.Project) error {
@@ -65,15 +124,33 @@ func containsAuthType(authTypes []string, target string) bool {
 	return false
 }
 
-func loginEmailPassword(user *db.User, passwordHash string, req *payload.UserLoginRequest) (string, error) {
+func loginEmailPassword(ctx context.Context, user *db.User, passwordHash string, req *payload.UserLoginRequest) (*payload.AuthTokens, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
-		return "", fmt.Errorf("invalid credentials")
+		return nil, fmt.Errorf("invalid credentials")
 	}
+	return issueTokenPair(ctx, user, user.ProjectID)
+}
 
-	token, err := utils.GenerateUserToken(user.ID, user.TenantID, user.ProjectID, user.UID, user.Name, user.Email, user.Role)
+func issueTokenPair(ctx context.Context, user *db.User, projectID string) (*payload.AuthTokens, error) {
+	attrs, _ := db.GetUserAttributes(ctx, user.ID)
+
+	accessToken, err := utils.GenerateUserToken(user.ID, user.TenantID, user.ProjectID, user.UID, user.Name, user.Email, user.Role, attrs)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate token: %w", err)
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	return token, nil
+	rawRefresh, expiresAt, err := utils.GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	tokenHash := sha256Hex(rawRefresh)
+	if err := db.InsertUserRefreshToken(ctx, user.ID, projectID, tokenHash, expiresAt); err != nil {
+		return nil, fmt.Errorf("failed to store refresh token: %w", err)
+	}
+
+	return &payload.AuthTokens{
+		AccessToken:  accessToken,
+		RefreshToken: rawRefresh,
+	}, nil
 }

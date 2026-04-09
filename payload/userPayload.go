@@ -1,5 +1,14 @@
 package payload
 
+type AuthTokens struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}
+
 type UserLoginRequest struct {
 	Email    string `json:"email"    binding:"required,email"`
 	Password string `json:"password" binding:"required"`
@@ -12,6 +21,10 @@ type SendOTPRequest struct {
 type VerifyOTPRequest struct {
 	Email string `json:"email" binding:"required,email"`
 	OTP   string `json:"otp"   binding:"required"`
+}
+
+type UpdateAttributesRequest struct {
+	Attributes map[string]string `json:"attributes"`
 }
 
 type CreateUserRequest struct {
