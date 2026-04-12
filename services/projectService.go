@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -64,4 +65,23 @@ func CreateProject(ctx context.Context, req *payload.CreateProjectRequest) (*db.
 	}
 
 	return project, clientSecret, nil
+}
+
+func GetProjectByID(ctx context.Context, projectID string) (*db.Project, error) {
+	project, err := db.GetProjectByID(ctx, projectID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("project not found")
+		}
+		return nil, fmt.Errorf("failed to fetch project: %w", err)
+	}
+	return project, nil
+}
+
+func GetProjectsByTenantID(ctx context.Context, tenantID string) ([]db.Project, error) {
+	projects, err := db.GetProjectsByTenantID(ctx, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch projects: %w", err)
+	}
+	return projects, nil
 }
