@@ -8,6 +8,9 @@ import (
 )
 
 func registerRoutes(v1 *gin.RouterGroup) {
+
+	v1.POST("/auth/refresh", handlers.RefreshToken)
+
 	tenant := v1.Group("/tenant")
 	{
 		tenant.POST("/create", handlers.CreateTenant)
@@ -17,7 +20,10 @@ func registerRoutes(v1 *gin.RouterGroup) {
 	project := v1.Group("/project")
 	{
 		project.POST("/create", handlers.CreateProject)
+		project.GET("/fetch", handlers.GetProject)
 	}
+
+	v1.GET("/user/fetch", handlers.GetUser)
 
 	user := v1.Group("/user", middleware.ClientCredentials())
 	{
@@ -25,5 +31,6 @@ func registerRoutes(v1 *gin.RouterGroup) {
 		user.POST("/emailpassword", handlers.UserLogin)
 		user.POST("/otp/email/send", handlers.SendEmailOTP)
 		user.POST("/otp/email/verify", handlers.VerifyEmailOTP)
+		user.PUT("/:userId/attributes", handlers.UpdateUserAttributes)
 	}
 }
