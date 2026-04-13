@@ -10,6 +10,70 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func GetUser(c *gin.Context) {
+	id := c.Query("id")
+	tenantID := c.Query("tenantId")
+
+	if id == "" && tenantID == "" {
+		panic(errutil.BadRequest("either 'id' or 'tenantId' query param is required"))
+	}
+
+	if id != "" {
+		user, err := services.GetUserByID(c.Request.Context(), id)
+		if err != nil {
+			if err.Error() == "user not found" {
+				panic(errutil.NotFound(err.Error()))
+			}
+			panic(errutil.Internal(err.Error()))
+		}
+
+		c.JSON(200, payload.SuccessResponse{
+			StatusCode: 200,
+			Message:    "User fetched successfully",
+			Data: []any{map[string]any{
+				"id":         user.ID,
+				"tenantId":   user.TenantID,
+				"projectId":  user.ProjectID,
+				"userId":     user.UID,
+				"name":       user.Name,
+				"email":      user.Email,
+				"phone":      user.Phone,
+					"role":       user.Role,
+				"isActive":   user.IsActive,
+				"createdAt":  user.CreatedAt,
+			}},
+		})
+		return
+	}
+
+	users, err := services.GetUsersByTenantID(c.Request.Context(), tenantID)
+	if err != nil {
+		panic(errutil.Internal(err.Error()))
+	}
+
+	data := make([]any, 0, len(users))
+	for _, u := range users {
+		data = append(data, map[string]any{
+			"id":         u.ID,
+			"tenantId":   u.TenantID,
+			"projectId":  u.ProjectID,
+			"userId":     u.UID,
+			"name":       u.Name,
+			"email":      u.Email,
+			"phone":      u.Phone,
+			"role":       u.Role,
+			"isActive":   u.IsActive,
+			"createdAt":  u.CreatedAt,
+		})
+	}
+
+	c.JSON(200, payload.SuccessResponse{
+		StatusCode: 200,
+		Message:    "Users fetched successfully",
+		Data:       data,
+	})
+}
+
 func projectFromCtx(c *gin.Context) *db.Project {
 	p, exists := c.Get(middleware.ProjectContextKey)
 	if !exists {
@@ -46,7 +110,6 @@ func CreateUser(c *gin.Context) {
 			"name":       user.Name,
 			"email":      user.Email,
 			"phone":      user.Phone,
-			"department": user.Department,
 			"role":       user.Role,
 			"isActive":   user.IsActive,
 			"createdAt":  user.CreatedAt,

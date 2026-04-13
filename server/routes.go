@@ -20,7 +20,10 @@ func registerRoutes(v1 *gin.RouterGroup) {
 	project := v1.Group("/project")
 	{
 		project.POST("/create", handlers.CreateProject)
+		project.GET("/fetch", handlers.GetProject)
 	}
+
+	v1.GET("/user/fetch", handlers.GetUser)
 
 	user := v1.Group("/user", middleware.ClientCredentials())
 	{
