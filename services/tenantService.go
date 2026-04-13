@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"new-auth-service/db"
 	"new-auth-service/payload"
@@ -13,7 +14,6 @@ import (
 )
 
 func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (*db.Tenant, error) {
-
 	accountID, err := utils.GenerateAccountID()
 	if err != nil {
 		return nil, err
@@ -32,27 +32,84 @@ func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (*db.Te
 	return tenant, nil
 }
 
-func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (string, error) {
+func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (*payload.TenantAuthTokens, error) {
 	tenant, passwordHash, err := db.GetTenantByAccountID(ctx, req.AccountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("invalid credentials")
+			return nil, fmt.Errorf("invalid credentials")
 		}
-		return "", fmt.Errorf("failed to fetch tenant: %w", err)
+		return nil, fmt.Errorf("failed to fetch tenant: %w", err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
-		return "", fmt.Errorf("invalid credentials")
+		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	if tenant.Status != "ACTIVE" {
-		return "", fmt.Errorf("tenant account is not active")
+	if tenant.Status != db.TenantStatusActive {
+		return nil, fmt.Errorf("tenant account is not active")
 	}
 
-	token, err := utils.GenerateTenantToken(tenant.ID, tenant.AccountID, tenant.Name, tenant.Email, tenant.Status)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate token: %w", err)
-	}
-
-	return token, nil
+	return issueTenantTokenPair(ctx, tenant)
 }
+
+func RefreshTenantToken(ctx context.Context, req *payload.RefreshTenantTokenRequest) (*payload.TenantAuthTokens, error) {
+	tokenHash := sha256Hex(req.RefreshToken)
+
+	rt, err := db.GetRefreshTokenByHash(ctx, tokenHash)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("invalid refresh token")
+		}
+		return nil, fmt.Errorf("failed to fetch refresh token: %w", err)
+	}
+
+	if rt.TenantID == "" {
+		return nil, fmt.Errorf("invalid refresh token")
+	}
+
+	if time.Now().After(rt.ExpiresAt) {
+		_ = db.DeleteRefreshToken(ctx, tokenHash)
+		return nil, fmt.Errorf("refresh token expired")
+	}
+
+	if err := db.DeleteRefreshToken(ctx, tokenHash); err != nil {
+		return nil, fmt.Errorf("failed to rotate refresh token: %w", err)
+	}
+
+	tenant, err := db.GetTenantByID(ctx, rt.TenantID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("tenant not found")
+		}
+		return nil, fmt.Errorf("failed to fetch tenant: %w", err)
+	}
+
+	if tenant.Status != db.TenantStatusActive {
+		return nil, fmt.Errorf("tenant account is not active")
+	}
+
+	return issueTenantTokenPair(ctx, tenant)
+}
+
+func issueTenantTokenPair(ctx context.Context, tenant *db.Tenant) (*payload.TenantAuthTokens, error) {
+	accessToken, err := utils.GenerateTenantToken(tenant.ID, tenant.AccountID, tenant.Name, tenant.Email, string(tenant.Status))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	rawRefresh, expiresAt, err := utils.GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	tokenHash := sha256Hex(rawRefresh)
+	if err := db.InsertTenantRefreshToken(ctx, tenant.ID, tokenHash, expiresAt); err != nil {
+		return nil, fmt.Errorf("failed to store refresh token: %w", err)
+	}
+
+	return &payload.TenantAuthTokens{
+		AccessToken:  accessToken,
+		RefreshToken: rawRefresh,
+	}, nil
+}
+

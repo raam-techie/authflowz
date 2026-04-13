@@ -46,6 +46,69 @@ func GetProjectByID(ctx context.Context, projectID string) (*Project, error) {
 	return p, nil
 }
 
+func GetProjectByClientID(ctx context.Context, clientID string) (*Project, string, error) {
+	query := `
+		SELECT id, tenant_id, client_id, client_secret_hash, name, description, app_type, auth_types, redirect_uris, is_active, created_at
+		FROM projects
+		WHERE client_id = $1
+	`
+	row := DB.QueryRowContext(ctx, query, clientID)
+
+	p := &Project{}
+	var desc sql.NullString
+	var secretHash string
+	var authTypesRaw, redirectURIsRaw []byte
+
+	err := row.Scan(
+		&p.ID, &p.TenantID, &p.ClientID, &secretHash, &p.Name, &desc,
+		&p.AppType, &authTypesRaw, &redirectURIsRaw, &p.IsActive, &p.CreatedAt,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	p.Description = desc.String
+	_ = json.Unmarshal(authTypesRaw, &p.AuthTypes)
+	_ = json.Unmarshal(redirectURIsRaw, &p.RedirectURIs)
+
+	return p, secretHash, nil
+}
+
+func GetProjectsByTenantID(ctx context.Context, tenantID string) ([]Project, error) {
+	query := `
+		SELECT id, tenant_id, client_id, name, description, app_type, auth_types, redirect_uris, is_active, created_at
+		FROM projects
+		WHERE tenant_id = $1
+	`
+	rows, err := DB.QueryContext(ctx, query, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var projects []Project
+	for rows.Next() {
+		p := Project{}
+		var desc sql.NullString
+		var authTypesRaw, redirectURIsRaw []byte
+
+		err := rows.Scan(
+			&p.ID, &p.TenantID, &p.ClientID, &p.Name, &desc,
+			&p.AppType, &authTypesRaw, &redirectURIsRaw, &p.IsActive, &p.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		p.Description = desc.String
+		_ = json.Unmarshal(authTypesRaw, &p.AuthTypes)
+		_ = json.Unmarshal(redirectURIsRaw, &p.RedirectURIs)
+
+		projects = append(projects, p)
+	}
+	return projects, rows.Err()
+}
+
 func InsertProject(ctx context.Context, tenantID, clientID, clientSecretHash, name, description, appType string, authTypes []string, redirectURIs []string) (*Project, error) {
 	authTypesJSON, err := json.Marshal(authTypes)
 	if err != nil {

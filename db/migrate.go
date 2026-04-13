@@ -48,6 +48,27 @@ func Migrate() error {
 			UNIQUE(tenant_id, uid),
 			UNIQUE(project_id, email)
 		)`,
+
+		`CREATE TABLE IF NOT EXISTS refresh_tokens (
+			id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
+			project_id  UUID REFERENCES projects(id) ON DELETE CASCADE,
+			tenant_id   UUID REFERENCES tenants(id) ON DELETE CASCADE,
+			token_hash  TEXT NOT NULL UNIQUE,
+			expires_at  TIMESTAMPTZ NOT NULL,
+			created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+
+		`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash)`,
+
+		`CREATE TABLE IF NOT EXISTS user_attributes (
+			id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			key        TEXT NOT NULL,
+			value      TEXT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE(user_id, key)
+		)`,
 	}
 
 	for _, q := range queries {
@@ -62,9 +83,12 @@ func Migrate() error {
 
 func MigrateDown() error {
 	queries := []string{
-		`DROP TABLE IF EXISTS users`,
-		`DROP TABLE IF EXISTS projects`,
-		`DROP TABLE IF EXISTS tenants`,
+		`DROP TABLE IF EXISTS user_attributes CASCADE`,
+		`DROP TABLE IF EXISTS refresh_tokens CASCADE`,
+		`DROP TABLE IF EXISTS user_refresh_tokens CASCADE`,
+		`DROP TABLE IF EXISTS users CASCADE`,
+		`DROP TABLE IF EXISTS projects CASCADE`,
+		`DROP TABLE IF EXISTS tenants CASCADE`,
 		`DROP SEQUENCE IF EXISTS user_uid_seq`,
 	}
 

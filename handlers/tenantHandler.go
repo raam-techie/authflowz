@@ -23,7 +23,7 @@ func CreateTenant(c *gin.Context) {
 		StatusCode: 201,
 		Message:    "Tenant created successfully",
 		Data: []any{map[string]any{
-			"id":        tenant.ID,
+			"tenantId":  tenant.ID,
 			"accountId": tenant.AccountID,
 			"name":      tenant.Name,
 			"email":     tenant.Email,
@@ -39,7 +39,7 @@ func TenantLogin(c *gin.Context) {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	token, err := services.LoginTenant(c.Request.Context(), &req)
+	tokens, err := services.LoginTenant(c.Request.Context(), &req)
 	if err != nil {
 		msg := err.Error()
 		if msg == "invalid credentials" || msg == "tenant account is not active" {
@@ -51,6 +51,28 @@ func TenantLogin(c *gin.Context) {
 	c.JSON(200, payload.SuccessResponse{
 		StatusCode: 200,
 		Message:    "Login successful",
-		Data:       []any{token},
+		Data:       []any{tokens},
+	})
+}
+
+func RefreshTenantToken(c *gin.Context) {
+	var req payload.RefreshTenantTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		panic(errutil.BadRequest(err.Error()))
+	}
+
+	tokens, err := services.RefreshTenantToken(c.Request.Context(), &req)
+	if err != nil {
+		msg := err.Error()
+		if msg == "invalid refresh token" || msg == "refresh token expired" || msg == "tenant account is not active" {
+			panic(errutil.Unauthorized(msg))
+		}
+		panic(errutil.Internal(msg))
+	}
+
+	c.JSON(200, payload.SuccessResponse{
+		StatusCode: 200,
+		Message:    "Token refreshed successfully",
+		Data:       []any{tokens},
 	})
 }
