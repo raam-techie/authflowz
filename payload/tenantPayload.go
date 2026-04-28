@@ -5,10 +5,6 @@ type TenantAuthTokens struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-type RefreshTenantTokenRequest struct {
-	RefreshToken string `json:"refreshToken" binding:"required"`
-}
-
 type TenantLoginRequest struct {
 	AccountID string `json:"accountId" binding:"required"`
 	Password  string `json:"password"  binding:"required"`

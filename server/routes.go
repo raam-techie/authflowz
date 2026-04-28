@@ -17,15 +17,22 @@ func registerRoutes(v1 *gin.RouterGroup) {
 		tenant.POST("/login", handlers.TenantLogin)
 	}
 
-	project := v1.Group("/project")
+	pool := v1.Group("/user-pool")
 	{
-		project.POST("/create", handlers.CreateProject)
-		project.GET("/fetch", handlers.GetProject)
+		pool.POST("/create", handlers.CreateUserPool)
+		pool.GET("/fetch", handlers.GetUserPool)
+	}
+
+	appClient := v1.Group("/app-client")
+	{
+		appClient.POST("/create", handlers.CreateAppClient)
+		appClient.GET("/fetch", handlers.GetAppClients)
 	}
 
 	v1.GET("/user/fetch", handlers.GetUser)
+	v1.GET("/audit-logs", handlers.GetAuditLogs)
 
-	user := v1.Group("/user", middleware.ClientCredentials())
+	user := v1.Group("/user", middleware.PoolClientCredentials())
 	{
 		user.POST("/create", handlers.CreateUser)
 		user.POST("/emailpassword", handlers.UserLogin)

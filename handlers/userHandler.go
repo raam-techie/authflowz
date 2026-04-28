@@ -31,16 +31,16 @@ func GetUser(c *gin.Context) {
 			StatusCode: 200,
 			Message:    "User fetched successfully",
 			Data: []any{map[string]any{
-				"id":         user.ID,
-				"tenantId":   user.TenantID,
-				"projectId":  user.ProjectID,
-				"userId":     user.UID,
-				"name":       user.Name,
-				"email":      user.Email,
-				"phone":      user.Phone,
-					"role":       user.Role,
-				"isActive":   user.IsActive,
-				"createdAt":  user.CreatedAt,
+				"id":          user.ID,
+				"tenantId":    user.TenantID,
+				"appClientId": user.AppClientID,
+				"userId":      user.UID,
+				"name":        user.Name,
+				"email":       user.Email,
+				"phone":       user.Phone,
+				"role":        user.Role,
+				"isActive":    user.IsActive,
+				"createdAt":   user.CreatedAt,
 			}},
 		})
 		return
@@ -54,16 +54,16 @@ func GetUser(c *gin.Context) {
 	data := make([]any, 0, len(users))
 	for _, u := range users {
 		data = append(data, map[string]any{
-			"id":         u.ID,
-			"tenantId":   u.TenantID,
-			"projectId":  u.ProjectID,
-			"userId":     u.UID,
-			"name":       u.Name,
-			"email":      u.Email,
-			"phone":      u.Phone,
-			"role":       u.Role,
-			"isActive":   u.IsActive,
-			"createdAt":  u.CreatedAt,
+			"id":          u.ID,
+			"tenantId":    u.TenantID,
+			"appClientId": u.AppClientID,
+			"userId":      u.UID,
+			"name":        u.Name,
+			"email":       u.Email,
+			"phone":       u.Phone,
+			"role":        u.Role,
+			"isActive":    u.IsActive,
+			"createdAt":   u.CreatedAt,
 		})
 	}
 
@@ -74,27 +74,50 @@ func GetUser(c *gin.Context) {
 	})
 }
 
-func projectFromCtx(c *gin.Context) *db.Project {
-	p, exists := c.Get(middleware.ProjectContextKey)
+func appClientFromCtx(c *gin.Context) *db.AppClient {
+	a, exists := c.Get(middleware.PoolClientContextKey)
 	if !exists {
-		panic(errutil.Internal("project context missing"))
+		panic(errutil.Internal("app client context missing"))
 	}
-	project, ok := p.(*db.Project)
+	appClient, ok := a.(*db.AppClient)
 	if !ok {
-		panic(errutil.Internal("invalid project context type"))
+		panic(errutil.Internal("invalid app client context type"))
 	}
-	return project
+	return appClient
 }
 
 func CreateUser(c *gin.Context) {
-	project := projectFromCtx(c)
+	appClient := appClientFromCtx(c)
 
 	var req payload.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	user, err := services.CreateUser(c.Request.Context(), &req, project)
+	user, err := services.CreateUser(c.Request.Context(), &req, appClient)
+
+	auditStatus := db.AuditStatusSuccess
+	auditReason := ""
+	auditUserID := ""
+	if err != nil {
+		auditStatus = db.AuditStatusFailure
+		auditReason = err.Error()
+	} else {
+		auditUserID = user.ID
+	}
+	services.LogAction(services.AuditEntry{
+		TenantID:      appClient.TenantID,
+		AppClientID:   appClient.ID,
+		UserID:        auditUserID,
+		Action:        db.AuditActionUserCreate,
+		ActorType:     db.ActorTypeUser,
+		IPAddress:     c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		Status:        auditStatus,
+		FailureReason: auditReason,
+		Metadata:      map[string]any{"email": req.Email, "role": req.Role},
+	})
+
 	if err != nil {
 		panic(errutil.Internal(err.Error()))
 	}
@@ -103,29 +126,49 @@ func CreateUser(c *gin.Context) {
 		StatusCode: 201,
 		Message:    "User created successfully",
 		Data: []any{map[string]any{
-			"id":         user.ID,
-			"tenantId":   user.TenantID,
-			"projectId":  user.ProjectID,
-			"userId":     user.UID,
-			"name":       user.Name,
-			"email":      user.Email,
-			"phone":      user.Phone,
-			"role":       user.Role,
-			"isActive":   user.IsActive,
-			"createdAt":  user.CreatedAt,
+			"id":          user.ID,
+			"tenantId":    user.TenantID,
+			"appClientId": user.AppClientID,
+			"userId":      user.UID,
+			"name":        user.Name,
+			"email":       user.Email,
+			"phone":       user.Phone,
+			"role":        user.Role,
+			"isActive":    user.IsActive,
+			"createdAt":   user.CreatedAt,
 		}},
 	})
 }
 
 func SendEmailOTP(c *gin.Context) {
-	project := projectFromCtx(c)
+	appClient := appClientFromCtx(c)
 
 	var req payload.SendOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	if err := services.SendEmailOTP(c.Request.Context(), &req, project); err != nil {
+	err := services.SendEmailOTP(c.Request.Context(), &req, appClient)
+
+	auditStatus := db.AuditStatusSuccess
+	auditReason := ""
+	if err != nil {
+		auditStatus = db.AuditStatusFailure
+		auditReason = err.Error()
+	}
+	services.LogAction(services.AuditEntry{
+		TenantID:      appClient.TenantID,
+		AppClientID:   appClient.ID,
+		Action:        db.AuditActionOTPSend,
+		ActorType:     db.ActorTypeUser,
+		IPAddress:     c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		Status:        auditStatus,
+		FailureReason: auditReason,
+		Metadata:      map[string]any{"email": req.Email},
+	})
+
+	if err != nil {
 		panic(errutil.Internal(err.Error()))
 	}
 
@@ -137,14 +180,33 @@ func SendEmailOTP(c *gin.Context) {
 }
 
 func VerifyEmailOTP(c *gin.Context) {
-	project := projectFromCtx(c)
+	appClient := appClientFromCtx(c)
 
 	var req payload.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	token, err := services.VerifyEmailOTP(c.Request.Context(), &req, project)
+	token, err := services.VerifyEmailOTP(c.Request.Context(), &req, appClient)
+
+	auditStatus := db.AuditStatusSuccess
+	auditReason := ""
+	if err != nil {
+		auditStatus = db.AuditStatusFailure
+		auditReason = err.Error()
+	}
+	services.LogAction(services.AuditEntry{
+		TenantID:      appClient.TenantID,
+		AppClientID:   appClient.ID,
+		Action:        db.AuditActionOTPVerify,
+		ActorType:     db.ActorTypeUser,
+		IPAddress:     c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		Status:        auditStatus,
+		FailureReason: auditReason,
+		Metadata:      map[string]any{"email": req.Email},
+	})
+
 	if err != nil {
 		panic(errutil.Internal(err.Error()))
 	}
@@ -157,17 +219,36 @@ func VerifyEmailOTP(c *gin.Context) {
 }
 
 func UserLogin(c *gin.Context) {
-	project := projectFromCtx(c)
+	appClient := appClientFromCtx(c)
 
 	var req payload.UserLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	tokens, err := services.LoginUser(c.Request.Context(), &req, project)
+	tokens, err := services.LoginUser(c.Request.Context(), &req, appClient)
+
+	auditStatus := db.AuditStatusSuccess
+	auditReason := ""
+	if err != nil {
+		auditStatus = db.AuditStatusFailure
+		auditReason = err.Error()
+	}
+	services.LogAction(services.AuditEntry{
+		TenantID:      appClient.TenantID,
+		AppClientID:   appClient.ID,
+		Action:        db.AuditActionUserLogin,
+		ActorType:     db.ActorTypeUser,
+		IPAddress:     c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		Status:        auditStatus,
+		FailureReason: auditReason,
+		Metadata:      map[string]any{"email": req.Email},
+	})
+
 	if err != nil {
 		msg := err.Error()
-		if msg == "invalid credentials" || msg == "user account is not active" || msg == "email/password auth is not enabled for this project" {
+		if msg == "invalid credentials" || msg == "user account is not active" || msg == "email/password auth is not enabled for this pool" {
 			panic(errutil.Unauthorized(msg))
 		}
 		panic(errutil.Internal(msg))
@@ -181,7 +262,7 @@ func UserLogin(c *gin.Context) {
 }
 
 func UpdateUserAttributes(c *gin.Context) {
-	project := projectFromCtx(c)
+	appClient := appClientFromCtx(c)
 	userID := c.Param("userId")
 
 	var req payload.UpdateAttributesRequest
@@ -193,7 +274,28 @@ func UpdateUserAttributes(c *gin.Context) {
 		panic(errutil.BadRequest("attributes must not be empty"))
 	}
 
-	if err := services.UpdateUserAttributes(c.Request.Context(), userID, &req, project); err != nil {
+	err := services.UpdateUserAttributes(c.Request.Context(), userID, &req, appClient)
+
+	auditStatus := db.AuditStatusSuccess
+	auditReason := ""
+	if err != nil {
+		auditStatus = db.AuditStatusFailure
+		auditReason = err.Error()
+	}
+	services.LogAction(services.AuditEntry{
+		TenantID:      appClient.TenantID,
+		AppClientID:   appClient.ID,
+		UserID:        userID,
+		Action:        db.AuditActionUserAttributeUpdate,
+		ActorType:     db.ActorTypeUser,
+		IPAddress:     c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		Status:        auditStatus,
+		FailureReason: auditReason,
+		Metadata:      map[string]any{"attributeCount": len(req.Attributes)},
+	})
+
+	if err != nil {
 		if err.Error() == "user not found" {
 			panic(errutil.NotFound(err.Error()))
 		}
@@ -214,6 +316,22 @@ func RefreshToken(c *gin.Context) {
 	}
 
 	tokens, err := services.RefreshToken(c.Request.Context(), &req)
+
+	auditStatus := db.AuditStatusSuccess
+	auditReason := ""
+	if err != nil {
+		auditStatus = db.AuditStatusFailure
+		auditReason = err.Error()
+	}
+	services.LogAction(services.AuditEntry{
+		Action:        db.AuditActionTokenRefresh,
+		ActorType:     db.ActorTypeSystem,
+		IPAddress:     c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		Status:        auditStatus,
+		FailureReason: auditReason,
+	})
+
 	if err != nil {
 		msg := err.Error()
 		if msg == "invalid refresh token" || msg == "refresh token expired" ||

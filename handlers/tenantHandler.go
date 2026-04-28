@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"new-auth-service/db"
 	"new-auth-service/errutil"
 	"new-auth-service/payload"
 	"new-auth-service/services"
@@ -40,6 +41,23 @@ func TenantLogin(c *gin.Context) {
 	}
 
 	tokens, err := services.LoginTenant(c.Request.Context(), &req)
+
+	auditStatus := db.AuditStatusSuccess
+	auditReason := ""
+	if err != nil {
+		auditStatus = db.AuditStatusFailure
+		auditReason = err.Error()
+	}
+	services.LogAction(services.AuditEntry{
+		Action:        db.AuditActionTenantLogin,
+		ActorType:     db.ActorTypeTenant,
+		IPAddress:     c.ClientIP(),
+		UserAgent:     c.Request.UserAgent(),
+		Status:        auditStatus,
+		FailureReason: auditReason,
+		Metadata:      map[string]any{"accountId": req.AccountID},
+	})
+
 	if err != nil {
 		msg := err.Error()
 		if msg == "invalid credentials" || msg == "tenant account is not active" {
@@ -55,24 +73,3 @@ func TenantLogin(c *gin.Context) {
 	})
 }
 
-func RefreshTenantToken(c *gin.Context) {
-	var req payload.RefreshTenantTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(errutil.BadRequest(err.Error()))
-	}
-
-	tokens, err := services.RefreshTenantToken(c.Request.Context(), &req)
-	if err != nil {
-		msg := err.Error()
-		if msg == "invalid refresh token" || msg == "refresh token expired" || msg == "tenant account is not active" {
-			panic(errutil.Unauthorized(msg))
-		}
-		panic(errutil.Internal(msg))
-	}
-
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
-		Message:    "Token refreshed successfully",
-		Data:       []any{tokens},
-	})
-}

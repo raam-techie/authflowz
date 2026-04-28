@@ -6,32 +6,32 @@ import (
 )
 
 type User struct {
-	ID         string
-	TenantID   string
-	ProjectID  string
-	UID        string
-	Name       string
-	Email      string
-	Phone string
-	Role  string
-	IsActive   bool
-	CreatedAt  string
+	ID          string
+	TenantID    string
+	AppClientID string
+	UID         string
+	Name        string
+	Email       string
+	Phone       string
+	Role        string
+	IsActive    bool
+	CreatedAt   string
 }
 
-func GetUserByEmail(ctx context.Context, projectID, email string) (*User, string, error) {
+func GetUserByEmail(ctx context.Context, appClientID, email string) (*User, string, error) {
 	query := `
-		SELECT id, tenant_id, project_id, uid, name, email, phone, role, is_active, password_hash, created_at
+		SELECT id, tenant_id, app_client_id, uid, name, email, phone, role, is_active, password_hash, created_at
 		FROM users
-		WHERE project_id = $1 AND email = $2
+		WHERE app_client_id = $1 AND email = $2
 	`
-	row := DB.QueryRowContext(ctx, query, projectID, email)
+	row := DB.QueryRowContext(ctx, query, appClientID, email)
 
 	u := &User{}
 	var phone sql.NullString
 	var passwordHash string
 
 	err := row.Scan(
-		&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name, &u.Email,
+		&u.ID, &u.TenantID, &u.AppClientID, &u.UID, &u.Name, &u.Email,
 		&phone, &u.Role, &u.IsActive, &passwordHash, &u.CreatedAt,
 	)
 	if err != nil {
@@ -45,7 +45,7 @@ func GetUserByEmail(ctx context.Context, projectID, email string) (*User, string
 
 func GetUserByID(ctx context.Context, userID string) (*User, error) {
 	query := `
-		SELECT id, tenant_id, project_id, uid, name, email, phone, role, is_active, created_at
+		SELECT id, tenant_id, app_client_id, uid, name, email, phone, role, is_active, created_at
 		FROM users
 		WHERE id = $1
 	`
@@ -54,7 +54,7 @@ func GetUserByID(ctx context.Context, userID string) (*User, error) {
 	u := &User{}
 	var phone sql.NullString
 	err := row.Scan(
-		&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name, &u.Email,
+		&u.ID, &u.TenantID, &u.AppClientID, &u.UID, &u.Name, &u.Email,
 		&phone, &u.Role, &u.IsActive, &u.CreatedAt,
 	)
 	if err != nil {
@@ -65,18 +65,18 @@ func GetUserByID(ctx context.Context, userID string) (*User, error) {
 	return u, nil
 }
 
-func GetUserByUID(ctx context.Context, projectID, uid string) (*User, error) {
+func GetUserByUID(ctx context.Context, appClientID, uid string) (*User, error) {
 	query := `
-		SELECT id, tenant_id, project_id, uid, name, email, phone, role, is_active, created_at
+		SELECT id, tenant_id, app_client_id, uid, name, email, phone, role, is_active, created_at
 		FROM users
-		WHERE project_id = $1 AND uid = $2
+		WHERE app_client_id = $1 AND uid = $2
 	`
-	row := DB.QueryRowContext(ctx, query, projectID, uid)
+	row := DB.QueryRowContext(ctx, query, appClientID, uid)
 
 	u := &User{}
 	var phone sql.NullString
 	err := row.Scan(
-		&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name, &u.Email,
+		&u.ID, &u.TenantID, &u.AppClientID, &u.UID, &u.Name, &u.Email,
 		&phone, &u.Role, &u.IsActive, &u.CreatedAt,
 	)
 	if err != nil {
@@ -89,7 +89,7 @@ func GetUserByUID(ctx context.Context, projectID, uid string) (*User, error) {
 
 func GetUsersByTenantID(ctx context.Context, tenantID string) ([]User, error) {
 	query := `
-		SELECT id, tenant_id, project_id, uid, name, email, phone, role, is_active, created_at
+		SELECT id, tenant_id, app_client_id, uid, name, email, phone, role, is_active, created_at
 		FROM users
 		WHERE tenant_id = $1
 	`
@@ -105,7 +105,7 @@ func GetUsersByTenantID(ctx context.Context, tenantID string) ([]User, error) {
 		var phone sql.NullString
 
 		err := rows.Scan(
-			&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name,
+			&u.ID, &u.TenantID, &u.AppClientID, &u.UID, &u.Name,
 			&u.Email, &phone, &u.Role, &u.IsActive, &u.CreatedAt,
 		)
 		if err != nil {
@@ -151,20 +151,20 @@ func GetUserAttributes(ctx context.Context, userID string) (map[string]string, e
 	return attrs, rows.Err()
 }
 
-func InsertUser(ctx context.Context, tenantID, projectID, name, email, passwordHash, phone, role string) (*User, error) {
+func InsertUser(ctx context.Context, tenantID, appClientID, name, email, passwordHash, phone, role string) (*User, error) {
 	if role == "" {
 		role = "USER"
 	}
 
 	query := `
-		INSERT INTO users (tenant_id, project_id, uid, name, email, password_hash, phone, role)
+		INSERT INTO users (tenant_id, app_client_id, uid, name, email, password_hash, phone, role)
 		VALUES ($1, $2, LPAD(nextval('user_uid_seq')::TEXT, 6, '0'), $3, $4, $5, $6, $7)
-		RETURNING id, tenant_id, project_id, uid, name, email, phone, role, is_active, created_at
+		RETURNING id, tenant_id, app_client_id, uid, name, email, phone, role, is_active, created_at
 	`
 
 	row := DB.QueryRowContext(ctx, query,
 		tenantID,
-		projectID,
+		appClientID,
 		name,
 		email,
 		passwordHash,
@@ -174,7 +174,7 @@ func InsertUser(ctx context.Context, tenantID, projectID, name, email, passwordH
 
 	u := &User{}
 	var phone2 sql.NullString
-	err := row.Scan(&u.ID, &u.TenantID, &u.ProjectID, &u.UID, &u.Name, &u.Email, &phone2, &u.Role, &u.IsActive, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.TenantID, &u.AppClientID, &u.UID, &u.Name, &u.Email, &phone2, &u.Role, &u.IsActive, &u.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
