@@ -36,7 +36,7 @@ func RefreshToken(ctx context.Context, req *payload.RefreshTokenRequest) (any, e
 		return refreshTenantFromToken(ctx, rt.TenantID)
 	}
 
-	return refreshUserFromToken(ctx, rt.UserID, rt.ProjectID)
+	return refreshUserFromToken(ctx, rt.UserID, rt.AppClientID)
 }
 
 func refreshTenantFromToken(ctx context.Context, tenantID string) (*payload.TenantAuthTokens, error) {
@@ -55,7 +55,7 @@ func refreshTenantFromToken(ctx context.Context, tenantID string) (*payload.Tena
 	return issueTenantTokenPair(ctx, tenant)
 }
 
-func refreshUserFromToken(ctx context.Context, userID, projectID string) (*payload.AuthTokens, error) {
+func refreshUserFromToken(ctx context.Context, userID, appClientID string) (*payload.AuthTokens, error) {
 	user, err := db.GetUserByID(ctx, userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -68,6 +68,6 @@ func refreshUserFromToken(ctx context.Context, userID, projectID string) (*paylo
 		return nil, fmt.Errorf("user account is not active")
 	}
 
-	return issueTokenPair(ctx, user, projectID)
+	return issueTokenPair(ctx, user, appClientID)
 }
 

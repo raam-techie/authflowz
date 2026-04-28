@@ -54,28 +54,28 @@ func GenerateTenantToken(tenantID, accountID, name, email, status string) (strin
 }
 
 type UserClaims struct {
-	UserID    string            `json:"userId"`
-	TenantID  string            `json:"tenantId"`
-	ProjectID string            `json:"projectId"`
-	UID       string            `json:"uid"`
-	Name      string            `json:"name"`
-	Email     string            `json:"email"`
-	Role      string            `json:"role"`
-	Custom    map[string]string `json:"custom,omitempty"`
+	UserID      string            `json:"userId"`
+	TenantID    string            `json:"tenantId"`
+	AppClientID string            `json:"appClientId"`
+	UID         string            `json:"uid"`
+	Name        string            `json:"name"`
+	Email       string            `json:"email"`
+	Role        string            `json:"role"`
+	Custom      map[string]string `json:"custom,omitempty"`
 	jwt.RegisteredClaims
 }
 
-func GenerateUserToken(userID, tenantID, projectID, uid, name, email, role string, custom map[string]string) (string, error) {
+func GenerateUserToken(userID, tenantID, appClientID, uid, name, email, role string, custom map[string]string) (string, error) {
 	secret, err := jwtSecret()
 	if err != nil {
 		return "", err
 	}
 
 	claims := UserClaims{
-		UserID:    userID,
-		TenantID:  tenantID,
-		ProjectID: projectID,
-		UID:       uid,
+		UserID:      userID,
+		TenantID:    tenantID,
+		AppClientID: appClientID,
+		UID:         uid,
 		Name:      name,
 		Email:     email,
 		Role:      role,
