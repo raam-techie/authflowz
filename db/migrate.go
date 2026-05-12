@@ -19,6 +19,11 @@ func Migrate() error {
 			created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
 
+		`DO $$ BEGIN
+			CREATE TYPE app_type_enum AS ENUM ('WEB', 'MOBILE', 'SPA', 'NATIVE', 'M2M');
+		EXCEPTION WHEN duplicate_object THEN NULL;
+		END $$`,
+
 		`CREATE TABLE IF NOT EXISTS user_pools (
 			id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			tenant_id        UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -26,9 +31,12 @@ func Migrate() error {
 			pool_id          TEXT NOT NULL UNIQUE,
 			description      TEXT,
 			sign_in_methods  JSONB NOT NULL,
+			app_type         app_type_enum NOT NULL,
 			is_active        BOOLEAN NOT NULL DEFAULT TRUE,
 			created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
+
+		`ALTER TABLE user_pools ADD COLUMN IF NOT EXISTS app_type app_type_enum NOT NULL DEFAULT 'WEB'`,
 
 		`CREATE INDEX IF NOT EXISTS idx_user_pools_tenant_id ON user_pools(tenant_id)`,
 

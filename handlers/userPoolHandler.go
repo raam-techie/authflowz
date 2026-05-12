@@ -36,6 +36,7 @@ func CreateUserPool(c *gin.Context) {
 			"poolName":      pool.PoolName,
 			"description":   pool.Description,
 			"signInMethods": pool.SignInMethods,
+			"appType":       pool.AppType,
 			"isActive":      pool.IsActive,
 			"createdAt":     pool.CreatedAt,
 		}},
@@ -69,6 +70,7 @@ func GetUserPool(c *gin.Context) {
 				"poolName":      pool.PoolName,
 				"description":   pool.Description,
 				"signInMethods": pool.SignInMethods,
+				"appType":       pool.AppType,
 				"isActive":      pool.IsActive,
 				"createdAt":     pool.CreatedAt,
 			}},
@@ -90,6 +92,7 @@ func GetUserPool(c *gin.Context) {
 			"poolName":      p.PoolName,
 			"description":   p.Description,
 			"signInMethods": p.SignInMethods,
+			"appType":       p.AppType,
 			"isActive":      p.IsActive,
 			"createdAt":     p.CreatedAt,
 		})
@@ -138,12 +141,12 @@ func CreateAppClient(c *gin.Context) {
 }
 
 func GetAppClients(c *gin.Context) {
-	poolID := c.Query("poolId")
-	if poolID == "" {
-		panic(errutil.BadRequest("'poolId' query param is required"))
+	tenantID := c.Query("tenantId")
+	if tenantID == "" {
+		panic(errutil.BadRequest("'tenantId' query param is required"))
 	}
 
-	clients, err := services.GetAppClientsByPoolID(c.Request.Context(), poolID)
+	clients, err := services.GetAppClientsByTenantID(c.Request.Context(), tenantID)
 	if err != nil {
 		panic(errutil.Internal(err.Error()))
 	}
