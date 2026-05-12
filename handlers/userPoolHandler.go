@@ -133,7 +133,6 @@ func CreateAppClient(c *gin.Context) {
 		Message:    "App client created successfully",
 		Data: []any{map[string]any{
 			"id":           client.ID,
-			"userPoolId":   client.UserPoolID,
 			"tenantId":     client.TenantID,
 			"clientName":   client.ClientName,
 			"clientId":     client.ClientID,
@@ -160,7 +159,6 @@ func GetAppClients(c *gin.Context) {
 	for _, cl := range clients {
 		data = append(data, map[string]any{
 			"id":         cl.ID,
-			"userPoolId": cl.UserPoolID,
 			"tenantId":   cl.TenantID,
 			"clientName": cl.ClientName,
 			"clientId":   cl.ClientID,

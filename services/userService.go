@@ -34,18 +34,6 @@ func CreateUser(ctx context.Context, req *payload.CreateUserRequest, appClient *
 }
 
 func LoginUser(ctx context.Context, req *payload.UserLoginRequest, appClient *db.AppClient) (*payload.AuthTokens, error) {
-	pool, err := db.GetUserPoolByID(ctx, appClient.UserPoolID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user pool not found")
-		}
-		return nil, fmt.Errorf("failed to fetch user pool: %w", err)
-	}
-
-	if !containsSignInMethod(pool.SignInMethods, string(db.SignInEmailPassword)) {
-		return nil, fmt.Errorf("email/password auth is not enabled for this pool")
-	}
-
 	user, passwordHash, err := db.GetUserByEmail(ctx, appClient.ID, req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {

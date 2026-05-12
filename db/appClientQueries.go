@@ -6,7 +6,6 @@ import (
 
 type AppClient struct {
 	ID         string
-	UserPoolID string
 	TenantID   string
 	ClientName string
 	ClientID   string
@@ -19,7 +18,7 @@ func InsertAppClient(ctx context.Context, tenantID, clientName, clientID, secret
 	query := `
 		INSERT INTO app_clients (tenant_id, client_name, client_id, client_secret_hash, app_type)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, user_pool_id, tenant_id, client_name, client_id, app_type, is_active, created_at
+		RETURNING id, tenant_id, client_name, client_id, app_type, is_active, created_at
 	`
 
 	row := DB.QueryRowContext(ctx, query,
@@ -32,7 +31,7 @@ func InsertAppClient(ctx context.Context, tenantID, clientName, clientID, secret
 
 	a := &AppClient{}
 	err := row.Scan(
-		&a.ID, &a.UserPoolID, &a.TenantID, &a.ClientName,
+		&a.ID, &a.TenantID, &a.ClientName,
 		&a.ClientID, &a.AppType, &a.IsActive, &a.CreatedAt,
 	)
 	if err != nil {
@@ -45,7 +44,7 @@ func InsertAppClient(ctx context.Context, tenantID, clientName, clientID, secret
 // The secret hash is returned separately and should not be stored on AppClient.
 func GetAppClientByClientID(ctx context.Context, clientID string) (*AppClient, string, error) {
 	query := `
-		SELECT id, user_pool_id, tenant_id, client_name, client_id, client_secret_hash, app_type, is_active, created_at
+		SELECT id, tenant_id, client_name, client_id, client_secret_hash, app_type, is_active, created_at
 		FROM app_clients
 		WHERE client_id = $1
 	`
@@ -55,7 +54,7 @@ func GetAppClientByClientID(ctx context.Context, clientID string) (*AppClient, s
 	a := &AppClient{}
 	var secretHash string
 	err := row.Scan(
-		&a.ID, &a.UserPoolID, &a.TenantID, &a.ClientName,
+		&a.ID, &a.TenantID, &a.ClientName,
 		&a.ClientID, &secretHash, &a.AppType, &a.IsActive, &a.CreatedAt,
 	)
 	if err != nil {
@@ -66,7 +65,7 @@ func GetAppClientByClientID(ctx context.Context, clientID string) (*AppClient, s
 
 func GetAppClientsByPoolID(ctx context.Context, userPoolID string) ([]AppClient, error) {
 	query := `
-		SELECT id, user_pool_id, tenant_id, client_name, client_id, app_type, is_active, created_at
+		SELECT id, tenant_id, client_name, client_id, app_type, is_active, created_at
 		FROM app_clients
 		WHERE user_pool_id = $1
 		ORDER BY created_at DESC
@@ -82,7 +81,7 @@ func GetAppClientsByPoolID(ctx context.Context, userPoolID string) ([]AppClient,
 	for rows.Next() {
 		a := AppClient{}
 		err := rows.Scan(
-			&a.ID, &a.UserPoolID, &a.TenantID, &a.ClientName,
+			&a.ID, &a.TenantID, &a.ClientName,
 			&a.ClientID, &a.AppType, &a.IsActive, &a.CreatedAt,
 		)
 		if err != nil {
@@ -95,7 +94,7 @@ func GetAppClientsByPoolID(ctx context.Context, userPoolID string) ([]AppClient,
 
 func GetAppClientsByTenantID(ctx context.Context, tenantID string) ([]AppClient, error) {
 	query := `
-		SELECT id, user_pool_id, tenant_id, client_name, client_id, app_type, is_active, created_at
+		SELECT id, tenant_id, client_name, client_id, app_type, is_active, created_at
 		FROM app_clients
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC
@@ -111,7 +110,7 @@ func GetAppClientsByTenantID(ctx context.Context, tenantID string) ([]AppClient,
 	for rows.Next() {
 		a := AppClient{}
 		err := rows.Scan(
-			&a.ID, &a.UserPoolID, &a.TenantID, &a.ClientName,
+			&a.ID, &a.TenantID, &a.ClientName,
 			&a.ClientID, &a.AppType, &a.IsActive, &a.CreatedAt,
 		)
 		if err != nil {

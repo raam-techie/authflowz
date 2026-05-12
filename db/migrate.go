@@ -54,6 +54,8 @@ func Migrate() error {
 
 		`CREATE INDEX IF NOT EXISTS idx_app_clients_user_pool_id ON app_clients(user_pool_id)`,
 
+		`ALTER TABLE app_clients ALTER COLUMN user_pool_id DROP NOT NULL`,
+
 		`CREATE TABLE IF NOT EXISTS users (
 			id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			tenant_id     UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
