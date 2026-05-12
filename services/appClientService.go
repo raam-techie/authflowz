@@ -74,3 +74,11 @@ func GetAppClientsByPoolID(ctx context.Context, userPoolID string) ([]db.AppClie
 	}
 	return clients, nil
 }
+
+func GetAppClientsByTenantID(ctx context.Context, tenantID string) ([]db.AppClient, error) {
+	clients, err := db.GetAppClientsByTenantID(ctx, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch app clients: %w", err)
+	}
+	return clients, nil
+}

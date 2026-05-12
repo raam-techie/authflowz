@@ -93,3 +93,32 @@ func GetAppClientsByPoolID(ctx context.Context, userPoolID string) ([]AppClient,
 	}
 	return clients, rows.Err()
 }
+
+func GetAppClientsByTenantID(ctx context.Context, tenantID string) ([]AppClient, error) {
+	query := `
+		SELECT id, user_pool_id, tenant_id, client_name, client_id, app_type, is_active, created_at
+		FROM app_clients
+		WHERE tenant_id = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := DB.QueryContext(ctx, query, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var clients []AppClient
+	for rows.Next() {
+		a := AppClient{}
+		err := rows.Scan(
+			&a.ID, &a.UserPoolID, &a.TenantID, &a.ClientName,
+			&a.ClientID, &a.AppType, &a.IsActive, &a.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		clients = append(clients, a)
+	}
+	return clients, rows.Err()
+}

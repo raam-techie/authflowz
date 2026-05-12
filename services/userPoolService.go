@@ -20,6 +20,9 @@ func generatePoolID() (string, error) {
 }
 
 func CreateUserPool(ctx context.Context, req *payload.CreateUserPoolRequest) (*db.UserPool, error) {
+	if !db.IsValidAppType(req.AppType) {
+		return nil, fmt.Errorf("invalid app type: %s", req.AppType)
+	}
 	if len(req.SignInMethods) == 0 {
 		return nil, fmt.Errorf("at least one sign-in method is required")
 	}
@@ -34,7 +37,7 @@ func CreateUserPool(ctx context.Context, req *payload.CreateUserPoolRequest) (*d
 		return nil, err
 	}
 
-	pool, err := db.InsertUserPool(ctx, req.TenantID, req.PoolName, poolID, req.Description, req.SignInMethods)
+	pool, err := db.InsertUserPool(ctx, req.TenantID, req.PoolName, poolID, req.Description, req.SignInMethods, req.AppType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user pool: %w", err)
 	}
