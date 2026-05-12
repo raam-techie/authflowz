@@ -31,17 +31,17 @@ func generateClientSecretHex() (string, error) {
 
 // CreateAppClient validates the request, generates credentials, and inserts an app client.
 // Returns the app client and the raw (unhashed) client secret — shown only once.
-func CreateAppClient(ctx context.Context, req *payload.CreateAppClientRequest) (*db.AppClient, string, error) {
+func CreateAppClient(ctx context.Context, tenantID string, req *payload.CreateAppClientRequest) (*db.AppClient, string, error) {
 	if !db.IsValidAppType(req.AppType) {
 		return nil, "", fmt.Errorf("invalid app type: %s", req.AppType)
 	}
 
-	pool, err := db.GetUserPoolByID(ctx, req.UserPoolID)
+	_, err := db.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, "", fmt.Errorf("user pool not found")
+			return nil, "", fmt.Errorf("tenant not found")
 		}
-		return nil, "", fmt.Errorf("failed to fetch user pool: %w", err)
+		return nil, "", fmt.Errorf("failed to fetch tenant: %w", err)
 	}
 
 	clientID, err := generateClientIDHex()
@@ -59,7 +59,7 @@ func CreateAppClient(ctx context.Context, req *payload.CreateAppClientRequest) (
 		return nil, "", fmt.Errorf("failed to hash client secret: %w", err)
 	}
 
-	client, err := db.InsertAppClient(ctx, pool.ID, pool.TenantID, req.ClientName, clientID, string(secretHash), req.AppType)
+	client, err := db.InsertAppClient(ctx, tenantID, req.ClientName, clientID, string(secretHash), req.AppType)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create app client: %w", err)
 	}

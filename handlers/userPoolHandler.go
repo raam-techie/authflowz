@@ -106,12 +106,17 @@ func GetUserPool(c *gin.Context) {
 }
 
 func CreateAppClient(c *gin.Context) {
+	tenantID := c.Query("tenantId")
+	if tenantID == "" {
+		panic(errutil.BadRequest("'tenantId' query param is required"))
+	}
+
 	var req payload.CreateAppClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
 	}
 
-	client, clientSecret, err := services.CreateAppClient(c.Request.Context(), &req)
+	client, clientSecret, err := services.CreateAppClient(c.Request.Context(), tenantID, &req)
 	if err != nil {
 		msg := err.Error()
 		if msg == "user pool not found" {
