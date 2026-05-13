@@ -11,17 +11,14 @@ const (
 	AppTypeM2M    AppType = "M2M"
 )
 
-var validAppTypes = map[AppType]struct{}{
-	AppTypeWeb:    {},
-	AppTypeMobile: {},
-	AppTypeSPA:    {},
-	AppTypeNative: {},
-	AppTypeM2M:    {},
-}
-
-func IsValidAppType(s string) bool {
-	_, ok := validAppTypes[AppType(s)]
-	return ok
+// IsValid returns true if the AppType is one of the defined constants.
+func (a AppType) IsValid() bool {
+	switch a {
+	case AppTypeWeb, AppTypeMobile, AppTypeSPA, AppTypeNative, AppTypeM2M:
+		return true
+	default:
+		return false
+	}
 }
 
 // SignInMethod represents an authentication method enabled on a user pool.
@@ -36,16 +33,12 @@ const (
 	SignInSSO           SignInMethod = "SSO"
 )
 
-var validSignInMethods = map[SignInMethod]struct{}{
-	SignInEmailPassword: {},
-	SignInPhonePassword: {},
-	SignInOTPEmail:      {},
-	SignInOTPPhone:      {},
-	SignInMagicLink:     {},
-	SignInSSO:           {},
-}
-
-func IsValidSignInMethod(s string) bool {
-	_, ok := validSignInMethods[SignInMethod(s)]
-	return ok
+// IsValid returns true if the SignInMethod is one of the defined constants.
+func (s SignInMethod) IsValid() bool {
+	switch s {
+	case SignInEmailPassword, SignInPhonePassword, SignInOTPEmail, SignInOTPPhone, SignInMagicLink, SignInSSO:
+		return true
+	default:
+		return false
+	}
 }

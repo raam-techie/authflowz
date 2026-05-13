@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 
@@ -32,16 +31,8 @@ func generateClientSecretHex() (string, error) {
 // CreateAppClient validates the request, generates credentials, and inserts an app client.
 // Returns the app client and the raw (unhashed) client secret — shown only once.
 func CreateAppClient(ctx context.Context, tenantID string, req *payload.CreateAppClientRequest) (*db.AppClient, string, error) {
-	if !db.IsValidAppType(req.AppType) {
+	if !db.AppType(req.AppType).IsValid() {
 		return nil, "", fmt.Errorf("invalid app type: %s", req.AppType)
-	}
-
-	_, err := db.GetTenantByID(ctx, tenantID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, "", fmt.Errorf("tenant not found")
-		}
-		return nil, "", fmt.Errorf("failed to fetch tenant: %w", err)
 	}
 
 	clientID, err := generateClientIDHex()
@@ -59,7 +50,7 @@ func CreateAppClient(ctx context.Context, tenantID string, req *payload.CreateAp
 		return nil, "", fmt.Errorf("failed to hash client secret: %w", err)
 	}
 
-	client, err := db.InsertAppClient(ctx, tenantID, req.ClientName, clientID, string(secretHash), req.AppType)
+	client, err := db.InsertAppClient(ctx, tenantID, req.UserPoolID, req.ClientName, clientID, string(secretHash), req.AppType)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create app client: %w", err)
 	}

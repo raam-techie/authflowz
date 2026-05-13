@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"new-auth-service/db"
 	"new-auth-service/errutil"
 	"new-auth-service/payload"
@@ -20,8 +21,8 @@ func CreateTenant(c *gin.Context) {
 		panic(errutil.Internal(err.Error()))
 	}
 
-	c.JSON(201, payload.SuccessResponse{
-		StatusCode: 201,
+	c.JSON(http.StatusCreated, payload.SuccessResponse{
+		StatusCode: http.StatusCreated,
 		Message:    "Tenant created successfully",
 		Data: []any{map[string]any{
 			"tenantId":  tenant.ID,
@@ -66,10 +67,9 @@ func TenantLogin(c *gin.Context) {
 		panic(errutil.Internal(msg))
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Login successful",
 		Data:       []any{tokens},
 	})
 }
-

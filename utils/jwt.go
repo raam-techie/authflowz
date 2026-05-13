@@ -53,6 +53,37 @@ func GenerateTenantToken(tenantID, accountID, name, email, status string) (strin
 	return token.SignedString(secret)
 }
 
+// ParseTenantToken validates the token and returns the claims if valid.
+// Caller should have already verified the token is well-formed and has "Bearer " prefix removed.
+//
+// param:
+// - tokenStr: the raw JWT string from the Authorization header (without "Bearer " prefix)
+//
+// returns:
+// - *TenantClaims: the parsed claims if token is valid
+// - error: if token is invalid or parsing fails
+func ParseTenantToken(tokenStr string) (*TenantClaims, error) {
+	secret, err := jwtSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := jwt.ParseWithClaims(tokenStr, &TenantClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secret, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	if claims, ok := token.Claims.(*TenantClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, fmt.Errorf("invalid token")
+}
+
 type UserClaims struct {
 	UserID      string            `json:"userId"`
 	TenantID    string            `json:"tenantId"`
@@ -76,10 +107,10 @@ func GenerateUserToken(userID, tenantID, appClientID, uid, name, email, role str
 		TenantID:    tenantID,
 		AppClientID: appClientID,
 		UID:         uid,
-		Name:      name,
-		Email:     email,
-		Role:      role,
-		Custom:    custom,
+		Name:        name,
+		Email:       email,
+		Role:        role,
+		Custom:      custom,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(userTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
