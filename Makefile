@@ -16,7 +16,7 @@ DB_DSN=user=$(DB_USERNAME) password=$(DB_PASSWORD) dbname=$(DB_DATABASE) host=lo
 
 # Usage: make goose-create name=init_schema
 goose-create:
-	goose -dir internal/db/migrations create $(name) sql
+	goose -dir $(GOOSE_MIGRATIONS_DIR) create $(name) sql
 
 # Run all pending migrations
 # Run Migration -- `make goose-up`
