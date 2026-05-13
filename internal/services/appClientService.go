@@ -6,9 +6,8 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-
-	"new-auth-service/db"
-	"new-auth-service/payload"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/payload"
 
 	"golang.org/x/crypto/bcrypt"
 )

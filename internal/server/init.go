@@ -1,8 +1,8 @@
 package server
 
 import (
-	"new-auth-service/db"
-	"new-auth-service/errutil"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/errutil"
 	"time"
 
 	"github.com/gin-contrib/cors"

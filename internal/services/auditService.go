@@ -3,8 +3,7 @@ package services
 import (
 	"context"
 	"log"
-
-	"new-auth-service/db"
+	"new-auth-service/internal/db"
 )
 
 type AuditEntry struct {

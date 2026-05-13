@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"new-auth-service/db"
-	"new-auth-service/payload"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/payload"
 )
 
 // RefreshToken is a unified refresh endpoint handler for both users and tenants.
@@ -70,4 +70,3 @@ func refreshUserFromToken(ctx context.Context, userID, appClientID string) (*pay
 
 	return issueTokenPair(ctx, user, appClientID)
 }
-

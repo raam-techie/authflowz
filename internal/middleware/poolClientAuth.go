@@ -3,8 +3,8 @@ package middleware
 import (
 	"database/sql"
 
-	"new-auth-service/db"
-	"new-auth-service/errutil"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/errutil"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
