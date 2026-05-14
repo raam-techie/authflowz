@@ -3,7 +3,7 @@
 
 CREATE TABLE tenants (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id          INT NOT NULL,
+    account_id          VARCHAR(200) NOT NULL,
     name                TEXT NOT NULL,
     email               TEXT NOT NULL,
     password            TEXT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE tenants (
     status              VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     settings            JSONB DEFAULT '{}'::JSONB, -- {"mfa_enforced": true, "sso_only": false, "max_users": 50}
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ,
     deleted_at          TIMESTAMPTZ
 );
 
@@ -32,7 +32,8 @@ CREATE TABLE user_pools (
     allowed_origins         TEXT[] DEFAULT '{}', -- CORS: which browser origins may make auth requests to this pool
     is_active               BOOLEAN NOT NULL DEFAULT TRUE,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at              TIMESTAMPTZ,
+    deleted_at              TIMESTAMPTZ
 );
 
 CREATE TABLE app_clients (
@@ -40,7 +41,7 @@ CREATE TABLE app_clients (
     user_pool_id            UUID NOT NULL REFERENCES user_pools (id) ON DELETE RESTRICT,
     tenant_id               UUID NOT NULL REFERENCES tenants (id) ON DELETE RESTRICT,
     client_name             TEXT NOT NULL, -- identity
-    client_id               TEXT NOT NULL, -- public-facing OAuth2 client identifier
+    client_id               TEXT, -- public-facing OAuth2 client identifier
     -- hashed with Argon2id — raw secret shown once at creation, then discarded
     client_secret_hash      TEXT,
     app_type                 VARCHAR(50) NOT NULL,
@@ -50,7 +51,8 @@ CREATE TABLE app_clients (
     metadata                JSONB DEFAULT '{}'::JSONB,
     is_active               BOOLEAN NOT NULL DEFAULT TRUE,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at              TIMESTAMPTZ,
+    deleted_at              TIMESTAMPTZ
 );
 
 CREATE TABLE users (
@@ -74,7 +76,7 @@ CREATE TABLE users (
     last_login_at           TIMESTAMPTZ,
     is_active               BOOLEAN NOT NULL DEFAULT TRUE,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ,
     deleted_at              TIMESTAMPTZ
 );
 
