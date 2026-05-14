@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"net/http"
-	"new-auth-service/db"
-	"new-auth-service/errutil"
-	"new-auth-service/middleware"
-	"new-auth-service/payload"
-	"new-auth-service/services"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/errutil"
+	"new-auth-service/internal/middleware"
+	"new-auth-service/internal/payload"
+	"new-auth-service/internal/services"
 
 	"github.com/gin-gonic/gin"
 )

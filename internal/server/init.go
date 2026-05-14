@@ -1,9 +1,9 @@
 package server
 
 import (
-	"new-auth-service/db"
-	"new-auth-service/errutil"
-	"new-auth-service/middleware"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/errutil"
+	"new-auth-service/internal/middleware"
 	"time"
 
 	"github.com/gin-gonic/gin"

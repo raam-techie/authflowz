@@ -1,8 +1,8 @@
 package server
 
 import (
-	"new-auth-service/handlers"
-	"new-auth-service/middleware"
+	"new-auth-service/internal/handlers"
+	"new-auth-service/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )

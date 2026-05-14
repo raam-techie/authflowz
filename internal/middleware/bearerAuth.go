@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"new-auth-service/utils"
+	"new-auth-service/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )

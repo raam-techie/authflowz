@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"new-auth-service/db"
-	"new-auth-service/errutil"
-	"new-auth-service/payload"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/errutil"
+	"new-auth-service/internal/payload"
 
 	"github.com/gin-gonic/gin"
 )
