@@ -10,6 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateTenant handles the tenant registration process. It validates the incoming request,
+// creates a new tenant using the service layer, and returns the created tenant details.
+//
+// params:
+// - c: The Gin context for managing the HTTP request and response.
 func CreateTenant(c *gin.Context) {
 	var req payload.CreateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -28,6 +33,10 @@ func CreateTenant(c *gin.Context) {
 	})
 }
 
+// TenantLogin handles the tenant login process. It validates the incoming request, authenticates the tenant using the service layer, logs the login attempt for auditing, and returns the authentication tokens if successful.
+//
+// params:
+// - c: The Gin context for managing the HTTP request and response.
 func TenantLogin(c *gin.Context) {
 	var req payload.TenantLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

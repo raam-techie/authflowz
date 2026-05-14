@@ -80,6 +80,7 @@ CREATE TABLE users (
 
 CREATE TABLE verification_tokens (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    app_client_id           UUID REFERENCES app_clients (id) ON DELETE CASCADE,
     user_id                 UUID REFERENCES users (id) ON DELETE CASCADE,
     tenant_id               UUID REFERENCES tenants (id) ON DELETE CASCADE,
     -- SHA-256 hash of the raw one-time token sent to the user

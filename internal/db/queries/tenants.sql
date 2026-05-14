@@ -12,7 +12,3 @@ WHERE account_id = $1;
 SELECT id, account_id, name, email, phone, address, website_url, status, created_at
 FROM tenants
 WHERE id = $1;
-
--- name: InsertTenantRefreshToken :exec
-INSERT INTO verification_tokens (tenant_id, token_hash, expires_at)
-VALUES ($1, $2, $3);

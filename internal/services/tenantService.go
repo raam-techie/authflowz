@@ -14,7 +14,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (map[string]any, error) {
+// CreateTenant handles the tenant registration process. It validates the incoming request,
+// creates a new tenant using the service layer, and returns the created tenant details.
+//
+// params:
+// - ctx: The context for managing request-scoped values and cancellation.
+// - req: The payload containing tenant registration details.
+//
+// returns:
+// - *payload.Tenant: The created tenant's details.
+// - error: An error object if the operation fails, otherwise nil.
+func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (*payload.Tenant, error) {
 	accountID, err := utils.GenerateAccountID()
 	if err != nil {
 		return nil, err
@@ -43,16 +53,26 @@ func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (map[st
 		return nil, fmt.Errorf("failed to insert tenant: %w", err)
 	}
 
-	return map[string]any{
-		"tenantId":  tenant.ID,
-		"accountId": tenant.AccountID,
-		"name":      tenant.Name,
-		"email":     tenant.Email,
-		"status":    tenant.Status,
-		"createdAt": tenant.CreatedAt,
+	return &payload.Tenant{
+		ID:        tenant.ID.String(),
+		AccountID: tenant.AccountID,
+		Name:      tenant.Name,
+		Email:     tenant.Email,
+		Status:    tenant.Status,
+		CreatedAt: tenant.CreatedAt.Time.String(),
 	}, nil
 }
 
+// LoginTenant handles the tenant login process. It validates the incoming request, authenticates the tenant using the service layer, logs the login attempt for auditing,
+// and returns the authentication tokens if successful.
+//
+// params:
+// - ctx: The context for managing request-scoped values and cancellation.
+// - req: The payload containing tenant login details.
+//
+// returns:
+// - *payload.TenantAuthTokens: The authentication tokens.
+// - error: An error object if the operation fails, otherwise nil.
 func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (*payload.TenantAuthTokens, error) {
 	tenant, err := internal.DB.GetTenantsByAccountID(ctx, req.AccountID)
 	if err != nil {
@@ -79,6 +99,15 @@ func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (*payload
 	})
 }
 
+// issueTenantTokenPair generates a new access token and refresh token for the authenticated tenant. It stores the refresh token in the database for future validation.
+//
+// params:
+// - ctx: The context for managing request-scoped values and cancellation.
+// - tenant: The authenticated tenant's details.
+//
+// returns:
+// - *payload.TenantAuthTokens: The generated authentication tokens.
+// - error: An error object if the operation fails, otherwise nil.
 func issueTenantTokenPair(ctx context.Context, tenant *payload.Tenant) (*payload.TenantAuthTokens, error) {
 	accessToken, err := utils.GenerateTenantToken(tenant.ID, tenant.AccountID, tenant.Name, tenant.Email, string(tenant.Status))
 	if err != nil {

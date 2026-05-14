@@ -135,19 +135,3 @@ func (q *Queries) InsertTenant(ctx context.Context, arg InsertTenantParams) (Ins
 	)
 	return i, err
 }
-
-const insertTenantRefreshToken = `-- name: InsertTenantRefreshToken :exec
-INSERT INTO verification_tokens (tenant_id, token_hash, expires_at)
-VALUES ($1, $2, $3)
-`
-
-type InsertTenantRefreshTokenParams struct {
-	TenantID  pgtype.UUID
-	TokenHash string
-	ExpiresAt pgtype.Timestamptz
-}
-
-func (q *Queries) InsertTenantRefreshToken(ctx context.Context, arg InsertTenantRefreshTokenParams) error {
-	_, err := q.db.Exec(ctx, insertTenantRefreshToken, arg.TenantID, arg.TokenHash, arg.ExpiresAt)
-	return err
-}
