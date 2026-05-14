@@ -98,11 +98,14 @@ type UserPool struct {
 }
 
 type VerificationToken struct {
-	ID        pgtype.UUID
-	UserID    pgtype.UUID
-	TokenHash string
-	Type      string
-	ExpiresAt pgtype.Timestamptz
-	UsedAt    pgtype.Timestamptz
-	CreatedAt pgtype.Timestamptz
+	ID              pgtype.UUID
+	UserID          pgtype.UUID
+	TokenHash       string
+	TenantID        pgtype.UUID
+	AppClientID     pgtype.UUID
+	Type            string
+	RequestedFromIp pgtype.Text
+	ExpiresAt       pgtype.Timestamptz
+	UsedAt          pgtype.Timestamptz
+	CreatedAt       pgtype.Timestamptz
 }

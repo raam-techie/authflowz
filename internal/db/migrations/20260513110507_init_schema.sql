@@ -80,11 +80,14 @@ CREATE TABLE users (
 
 CREATE TABLE verification_tokens (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id                 UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    user_id                 UUID REFERENCES users (id) ON DELETE CASCADE,
     -- SHA-256 hash of the raw one-time token sent to the user
     -- raw token is never stored; compare by hashing the submitted token
     token_hash              TEXT NOT NULL,
+    tenant_id               UUID REFERENCES tenants (id) ON DELETE CASCADE, -- which org this token belongs to
+    app_client_id           UUID REFERENCES app_clients (id) ON DELETE SET NULL, -- which app client initiated the flow (SDK / web / mobile)
     type                    VARCHAR(200) NOT NULL,
+    requested_from_ip       VARCHAR(100), -- ip that requested the token
     -- expiry windows by type:
     --   email_verification  24 hours
     --   password_reset      15 minutes
