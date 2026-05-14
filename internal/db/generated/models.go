@@ -102,8 +102,8 @@ type UserPool struct {
 type VerificationToken struct {
 	ID              pgtype.UUID
 	UserID          pgtype.UUID
-	TokenHash       string
 	TenantID        pgtype.UUID
+	TokenHash       string
 	AppClientID     pgtype.UUID
 	Type            string
 	RequestedFromIp pgtype.Text
