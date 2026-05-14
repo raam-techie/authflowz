@@ -11,42 +11,143 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const testTenants = `-- name: TestTenants :exec
-INSERT INTO "tenants"(
-    name,
-    email,
-    password,
-    phone,
-    website_url,
-    address,
-    status,
-    settings
-) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
-)
+const getTenantByID = `-- name: GetTenantByID :one
+SELECT id, account_id, name, email, phone, address, website_url, status, created_at
+FROM tenants
+WHERE id = $1
 `
 
-type TestTenantsParams struct {
+type GetTenantByIDRow struct {
+	ID         pgtype.UUID
+	AccountID  string
+	Name       string
+	Email      string
+	Phone      pgtype.Text
+	Address    []byte
+	WebsiteUrl pgtype.Text
+	Status     string
+	CreatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (GetTenantByIDRow, error) {
+	row := q.db.QueryRow(ctx, getTenantByID, id)
+	var i GetTenantByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Address,
+		&i.WebsiteUrl,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getTenantsByAccountID = `-- name: GetTenantsByAccountID :one
+SELECT id, account_id, name, email, phone, address, website_url, status, password, created_at
+FROM tenants
+WHERE account_id = $1
+`
+
+type GetTenantsByAccountIDRow struct {
+	ID         pgtype.UUID
+	AccountID  string
+	Name       string
+	Email      string
+	Phone      pgtype.Text
+	Address    []byte
+	WebsiteUrl pgtype.Text
+	Status     string
+	Password   string
+	CreatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) GetTenantsByAccountID(ctx context.Context, accountID string) (GetTenantsByAccountIDRow, error) {
+	row := q.db.QueryRow(ctx, getTenantsByAccountID, accountID)
+	var i GetTenantsByAccountIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Address,
+		&i.WebsiteUrl,
+		&i.Status,
+		&i.Password,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertTenant = `-- name: InsertTenant :one
+INSERT INTO tenants (account_id, name, email, password, phone, address, website_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, account_id, name, email, phone, address, website_url, status, created_at
+`
+
+type InsertTenantParams struct {
+	AccountID  string
 	Name       string
 	Email      string
 	Password   string
 	Phone      pgtype.Text
-	WebsiteUrl pgtype.Text
 	Address    []byte
-	Status     string
-	Settings   []byte
+	WebsiteUrl pgtype.Text
 }
 
-func (q *Queries) TestTenants(ctx context.Context, arg TestTenantsParams) error {
-	_, err := q.db.Exec(ctx, testTenants,
+type InsertTenantRow struct {
+	ID         pgtype.UUID
+	AccountID  string
+	Name       string
+	Email      string
+	Phone      pgtype.Text
+	Address    []byte
+	WebsiteUrl pgtype.Text
+	Status     string
+	CreatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) InsertTenant(ctx context.Context, arg InsertTenantParams) (InsertTenantRow, error) {
+	row := q.db.QueryRow(ctx, insertTenant,
+		arg.AccountID,
 		arg.Name,
 		arg.Email,
 		arg.Password,
 		arg.Phone,
-		arg.WebsiteUrl,
 		arg.Address,
-		arg.Status,
-		arg.Settings,
+		arg.WebsiteUrl,
 	)
+	var i InsertTenantRow
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Address,
+		&i.WebsiteUrl,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertTenantRefreshToken = `-- name: InsertTenantRefreshToken :exec
+INSERT INTO verification_tokens (tenant_id, token_hash, expires_at)
+VALUES ($1, $2, $3)
+`
+
+type InsertTenantRefreshTokenParams struct {
+	TenantID  pgtype.UUID
+	TokenHash string
+	ExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) InsertTenantRefreshToken(ctx context.Context, arg InsertTenantRefreshTokenParams) error {
+	_, err := q.db.Exec(ctx, insertTenantRefreshToken, arg.TenantID, arg.TokenHash, arg.ExpiresAt)
 	return err
 }

@@ -24,14 +24,7 @@ func CreateTenant(c *gin.Context) {
 	c.JSON(http.StatusCreated, payload.SuccessResponse{
 		StatusCode: http.StatusCreated,
 		Message:    "Tenant created successfully",
-		Data: []any{map[string]any{
-			"tenantId":  tenant.ID,
-			"accountId": tenant.AccountID,
-			"name":      tenant.Name,
-			"email":     tenant.Email,
-			"status":    tenant.Status,
-			"createdAt": tenant.CreatedAt,
-		}},
+		Data:       []any{tenant},
 	})
 }
 

@@ -43,3 +43,10 @@ func Close(database *sql.DB) {
 		}
 	}
 }
+
+func nullableString(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
+}

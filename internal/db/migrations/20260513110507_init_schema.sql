@@ -3,6 +3,7 @@
 
 CREATE TABLE tenants (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id          TEXT UNIQUE NOT NULL,
     name                TEXT NOT NULL,
     email               TEXT NOT NULL,
     password            TEXT NOT NULL,
@@ -79,7 +80,8 @@ CREATE TABLE users (
 
 CREATE TABLE verification_tokens (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id                 UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    user_id                 UUID REFERENCES users (id) ON DELETE CASCADE,
+    tenant_id               UUID REFERENCES tenants (id) ON DELETE CASCADE,
     -- SHA-256 hash of the raw one-time token sent to the user
     -- raw token is never stored; compare by hashing the submitted token
     token_hash              TEXT NOT NULL,

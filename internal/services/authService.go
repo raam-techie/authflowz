@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	"new-auth-service/internal"
 	"new-auth-service/internal/db"
+	"new-auth-service/internal/enum"
 	"new-auth-service/internal/payload"
+	"new-auth-service/internal/utils"
 )
 
 // RefreshToken is a unified refresh endpoint handler for both users and tenants.
@@ -40,7 +43,7 @@ func RefreshToken(ctx context.Context, req *payload.RefreshTokenRequest) (any, e
 }
 
 func refreshTenantFromToken(ctx context.Context, tenantID string) (*payload.TenantAuthTokens, error) {
-	tenant, err := db.GetTenantByID(ctx, tenantID)
+	tenant, err := internal.DB.GetTenantByID(ctx, utils.StringToPGUUID(tenantID))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("tenant not found")
@@ -48,11 +51,17 @@ func refreshTenantFromToken(ctx context.Context, tenantID string) (*payload.Tena
 		return nil, fmt.Errorf("failed to fetch tenant: %w", err)
 	}
 
-	if tenant.Status != db.TenantStatusActive {
+	if tenant.Status != enum.TenantStatusActive.String() {
 		return nil, fmt.Errorf("tenant account is not active")
 	}
 
-	return issueTenantTokenPair(ctx, tenant)
+	return issueTenantTokenPair(ctx, &payload.Tenant{
+		ID:        tenant.ID.String(),
+		AccountID: tenant.AccountID,
+		Name:      tenant.Name,
+		Email:     tenant.Email,
+		Status:    tenant.Status,
+	})
 }
 
 func refreshUserFromToken(ctx context.Context, userID, appClientID string) (*payload.AuthTokens, error) {

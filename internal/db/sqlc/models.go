@@ -42,6 +42,7 @@ type AuditLog struct {
 
 type Tenant struct {
 	ID         pgtype.UUID
+	AccountID  string
 	Name       string
 	Email      string
 	Password   string
@@ -99,6 +100,7 @@ type UserPool struct {
 type VerificationToken struct {
 	ID        pgtype.UUID
 	UserID    pgtype.UUID
+	TenantID  pgtype.UUID
 	TokenHash string
 	Type      string
 	ExpiresAt pgtype.Timestamptz
