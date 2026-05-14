@@ -14,15 +14,16 @@ type AppClient struct {
 	CreatedAt  string
 }
 
-func InsertAppClient(ctx context.Context, tenantID, clientName, clientID, secretHash, appType string) (*AppClient, error) {
+func InsertAppClient(ctx context.Context, tenantID, userPoolID, clientName, clientID, secretHash, appType string) (*AppClient, error) {
 	query := `
-		INSERT INTO app_clients (tenant_id, client_name, client_id, client_secret_hash, app_type)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO app_clients (tenant_id, user_pool_id ,client_name, client_id, client_secret_hash, app_type)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, tenant_id, client_name, client_id, app_type, is_active, created_at
 	`
 
 	row := DB.QueryRowContext(ctx, query,
 		tenantID,
+		userPoolID,
 		clientName,
 		clientID,
 		secretHash,

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"time"
 
 	"new-auth-service/internal/db"
@@ -63,8 +64,8 @@ func GetAuditLogs(c *gin.Context) {
 		})
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Audit logs fetched successfully",
 		Data:       data,
 	})
