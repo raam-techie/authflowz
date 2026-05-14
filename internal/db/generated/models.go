@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.31.1
 
-package sqlc
+package generated
 
 import (
 	"net/netip"
@@ -42,7 +42,7 @@ type AuditLog struct {
 
 type Tenant struct {
 	ID         pgtype.UUID
-	AccountID  string
+	AccountID  int32
 	Name       string
 	Email      string
 	Password   string
@@ -100,8 +100,8 @@ type UserPool struct {
 type VerificationToken struct {
 	ID              pgtype.UUID
 	UserID          pgtype.UUID
-	TenantID        pgtype.UUID
 	TokenHash       string
+	TenantID        pgtype.UUID
 	AppClientID     pgtype.UUID
 	Type            string
 	RequestedFromIp pgtype.Text

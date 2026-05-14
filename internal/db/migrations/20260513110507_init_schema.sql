@@ -3,7 +3,7 @@
 
 CREATE TABLE tenants (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id          TEXT UNIQUE NOT NULL,
+    account_id          VARCHAR(50) UNIQUE NOT NULL,
     name                TEXT NOT NULL,
     email               TEXT NOT NULL,
     password            TEXT NOT NULL,
@@ -80,13 +80,14 @@ CREATE TABLE users (
 
 CREATE TABLE verification_tokens (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    app_client_id           UUID REFERENCES app_clients (id) ON DELETE CASCADE,
     user_id                 UUID REFERENCES users (id) ON DELETE CASCADE,
-    tenant_id               UUID REFERENCES tenants (id) ON DELETE CASCADE,
+    tenant_id               UUID REFERENCES tenants (id) ON DELETE CASCADE, -- which org this token belongs to
     -- SHA-256 hash of the raw one-time token sent to the user
     -- raw token is never stored; compare by hashing the submitted token
     token_hash              TEXT NOT NULL,
+    app_client_id           UUID REFERENCES app_clients (id) ON DELETE SET NULL, -- which app client initiated the flow (SDK / web / mobile)
     type                    VARCHAR(200) NOT NULL,
+    requested_from_ip       VARCHAR(100), -- ip that requested the token
     -- expiry windows by type:
     --   email_verification  24 hours
     --   password_reset      15 minutes
@@ -107,31 +108,26 @@ CREATE TABLE audit_logs (
     -- UUIDv7 is time-sortable: sorting by id == sorting by created_at
     -- Use pgcrypto gen_random_uuid() as fallback if UUIDv7 extension unavailable
     id                      UUID NOT NULL DEFAULT gen_random_uuid(),
- 
     tenant_id               UUID NOT NULL,
     -- actor_id nullable: system/scheduled jobs have no human actor
     actor_id                UUID,
     -- actor_type: 'user' | 'system' | 'api_key' | 'service_account'
     actor_type              TEXT NOT NULL,
- 
     -- namespaced action verb: "user.login.success", "pool.created", "client.secret_rotated"
     action                  TEXT NOT NULL,
- 
     -- what entity was acted on
     resource_type           TEXT NOT NULL,
     resource_id             UUID,
- 
     -- full diff for update events
     old_value               JSONB,
     new_value               JSONB,
- 
     -- request context
     ip_address              INET,
     user_agent              TEXT,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
  
-    -- email lookup (login / contact search)
+-- email lookup (login / contact search)
 CREATE UNIQUE INDEX idx_tenants_email
     ON tenants (email)
     WHERE deleted_at IS NULL;
