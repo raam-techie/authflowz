@@ -3,22 +3,21 @@ package server
 import (
 	"new-auth-service/internal/db"
 	"new-auth-service/internal/errutil"
+	"new-auth-service/internal/middleware"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
 
-	router.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Client-ID", "X-Client-Secret"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: false,
-		MaxAge:           12 * time.Hour,
+	router.Use(middleware.CORSMiddleware(middleware.CORSConfig{
+		AllowedOrigins: []string{"*"}, // TODO: Restrict this in production to specific domains
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Origin", "Content-Type", "Authorization", "X-Client-ID", "X-Client-Secret"}, // Extend as needed
+		ExposedHeaders: []string{"Content-Length"},
+		MaxAge:         12 * time.Hour,
 	}))
 
 	router.Use(errutil.ErrorMiddleware())

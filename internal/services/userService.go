@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"new-auth-service/internal"
 	"new-auth-service/internal/db"
+	"new-auth-service/internal/db/sqlc"
 	"new-auth-service/internal/payload"
 	"new-auth-service/internal/utils"
 
@@ -117,7 +119,12 @@ func issueTokenPair(ctx context.Context, user *db.User, appClientID string) (*pa
 	}
 
 	tokenHash := sha256Hex(rawRefresh)
-	if err := db.InsertUserRefreshToken(ctx, user.ID, appClientID, tokenHash, expiresAt); err != nil {
+	if err := internal.DB.InsertUserRefreshToken(ctx, sqlc.InsertUserRefreshTokenParams{
+		UserID:      utils.StringToPGUUID(user.ID),
+		AppClientID: utils.StringToPGUUID(appClientID),
+		TokenHash:   tokenHash,
+		ExpiresAt:   utils.TimeToPGTimestamptz(expiresAt),
+	}); err != nil {
 		return nil, fmt.Errorf("failed to store refresh token: %w", err)
 	}
 

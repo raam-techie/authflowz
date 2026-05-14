@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"new-auth-service/internal/db"
 	"new-auth-service/internal/errutil"
 	"new-auth-service/internal/payload"
@@ -9,6 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateTenant handles the tenant registration process. It validates the incoming request,
+// creates a new tenant using the service layer, and returns the created tenant details.
+//
+// params:
+// - c: The Gin context for managing the HTTP request and response.
 func CreateTenant(c *gin.Context) {
 	var req payload.CreateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -20,20 +26,17 @@ func CreateTenant(c *gin.Context) {
 		panic(errutil.Internal(err.Error()))
 	}
 
-	c.JSON(201, payload.SuccessResponse{
-		StatusCode: 201,
+	c.JSON(http.StatusCreated, payload.SuccessResponse{
+		StatusCode: http.StatusCreated,
 		Message:    "Tenant created successfully",
-		Data: []any{map[string]any{
-			"tenantId":  tenant.ID,
-			"accountId": tenant.AccountID,
-			"name":      tenant.Name,
-			"email":     tenant.Email,
-			"status":    tenant.Status,
-			"createdAt": tenant.CreatedAt,
-		}},
+		Data:       []any{tenant},
 	})
 }
 
+// TenantLogin handles the tenant login process. It validates the incoming request, authenticates the tenant using the service layer, logs the login attempt for auditing, and returns the authentication tokens if successful.
+//
+// params:
+// - c: The Gin context for managing the HTTP request and response.
 func TenantLogin(c *gin.Context) {
 	var req payload.TenantLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -66,8 +69,8 @@ func TenantLogin(c *gin.Context) {
 		panic(errutil.Internal(msg))
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Login successful",
 		Data:       []any{tokens},
 	})

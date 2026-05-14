@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"new-auth-service/internal/errutil"
 	"new-auth-service/internal/payload"
 	"new-auth-service/internal/services"
@@ -26,8 +27,8 @@ func CreateUserPool(c *gin.Context) {
 		panic(errutil.Internal(msg))
 	}
 
-	c.JSON(201, payload.SuccessResponse{
-		StatusCode: 201,
+	c.JSON(http.StatusCreated, payload.SuccessResponse{
+		StatusCode: http.StatusCreated,
 		Message:    "User pool created successfully",
 		Data: []any{map[string]any{
 			"id":            pool.ID,
@@ -60,8 +61,8 @@ func GetUserPool(c *gin.Context) {
 			panic(errutil.Internal(err.Error()))
 		}
 
-		c.JSON(200, payload.SuccessResponse{
-			StatusCode: 200,
+		c.JSON(http.StatusOK, payload.SuccessResponse{
+			StatusCode: http.StatusOK,
 			Message:    "User pool fetched successfully",
 			Data: []any{map[string]any{
 				"id":            pool.ID,
@@ -98,18 +99,16 @@ func GetUserPool(c *gin.Context) {
 		})
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "User pools fetched successfully",
 		Data:       data,
 	})
 }
 
 func CreateAppClient(c *gin.Context) {
-	tenantID := c.Query("tenantId")
-	if tenantID == "" {
-		panic(errutil.BadRequest("'tenantId' query param is required"))
-	}
+
+	tenantID := c.GetString("tenantId")
 
 	var req payload.CreateAppClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -128,8 +127,8 @@ func CreateAppClient(c *gin.Context) {
 		panic(errutil.Internal(msg))
 	}
 
-	c.JSON(201, payload.SuccessResponse{
-		StatusCode: 201,
+	c.JSON(http.StatusCreated, payload.SuccessResponse{
+		StatusCode: http.StatusCreated,
 		Message:    "App client created successfully",
 		Data: []any{map[string]any{
 			"id":           client.ID,
@@ -168,8 +167,8 @@ func GetAppClients(c *gin.Context) {
 		})
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "App clients fetched successfully",
 		Data:       data,
 	})

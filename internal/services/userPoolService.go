@@ -20,14 +20,14 @@ func generatePoolID() (string, error) {
 }
 
 func CreateUserPool(ctx context.Context, req *payload.CreateUserPoolRequest) (*db.UserPool, error) {
-	if !db.IsValidAppType(req.AppType) {
+	if !db.AppType(req.AppType).IsValid() {
 		return nil, fmt.Errorf("invalid app type: %s", req.AppType)
 	}
 	if len(req.SignInMethods) == 0 {
 		return nil, fmt.Errorf("at least one sign-in method is required")
 	}
 	for _, m := range req.SignInMethods {
-		if !db.IsValidSignInMethod(m) {
+		if !db.SignInMethod(m).IsValid() {
 			return nil, fmt.Errorf("invalid sign-in method: %s", m)
 		}
 	}

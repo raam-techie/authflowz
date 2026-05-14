@@ -15,7 +15,7 @@ type AppClient struct {
 	UserPoolID       pgtype.UUID
 	TenantID         pgtype.UUID
 	ClientName       string
-	ClientID         string
+	ClientID         pgtype.Text
 	ClientSecretHash pgtype.Text
 	AppType          string
 	TokenTtlOverride pgtype.Int4
@@ -23,6 +23,7 @@ type AppClient struct {
 	IsActive         bool
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
+	DeletedAt        pgtype.Timestamptz
 }
 
 type AuditLog struct {
@@ -42,6 +43,7 @@ type AuditLog struct {
 
 type Tenant struct {
 	ID         pgtype.UUID
+	AccountID  string
 	Name       string
 	Email      string
 	Password   string
@@ -94,14 +96,18 @@ type UserPool struct {
 	IsActive          bool
 	CreatedAt         pgtype.Timestamptz
 	UpdatedAt         pgtype.Timestamptz
+	DeletedAt         pgtype.Timestamptz
 }
 
 type VerificationToken struct {
-	ID        pgtype.UUID
-	UserID    pgtype.UUID
-	TokenHash string
-	Type      string
-	ExpiresAt pgtype.Timestamptz
-	UsedAt    pgtype.Timestamptz
-	CreatedAt pgtype.Timestamptz
+	ID              pgtype.UUID
+	UserID          pgtype.UUID
+	TenantID        pgtype.UUID
+	TokenHash       string
+	AppClientID     pgtype.UUID
+	Type            string
+	RequestedFromIp pgtype.Text
+	ExpiresAt       pgtype.Timestamptz
+	UsedAt          pgtype.Timestamptz
+	CreatedAt       pgtype.Timestamptz
 }

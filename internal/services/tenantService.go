@@ -3,15 +3,28 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"new-auth-service/internal/db"
+	"new-auth-service/internal"
+	"new-auth-service/internal/db/sqlc"
+	"new-auth-service/internal/enum"
 	"new-auth-service/internal/payload"
 	"new-auth-service/internal/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (*db.Tenant, error) {
+// CreateTenant handles the tenant registration process. It validates the incoming request,
+// creates a new tenant using the service layer, and returns the created tenant details.
+//
+// params:
+// - ctx: The context for managing request-scoped values and cancellation.
+// - req: The payload containing tenant registration details.
+//
+// returns:
+// - *payload.Tenant: The created tenant's details.
+// - error: An error object if the operation fails, otherwise nil.
+func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (*payload.Tenant, error) {
 	accountID, err := utils.GenerateAccountID()
 	if err != nil {
 		return nil, err
@@ -22,16 +35,46 @@ func CreateTenant(ctx context.Context, req *payload.CreateTenantRequest) (*db.Te
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	tenant, err := db.InsertTenant(ctx, accountID, req.Name, req.Email, string(hash), req.Phone, req.Address, req.WebsiteURL)
+	addressJSON, err := json.Marshal(req.Address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal address: %w", err)
+	}
+
+	tenant, err := internal.DB.InsertTenant(ctx, sqlc.InsertTenantParams{
+		AccountID:  accountID,
+		Name:       req.Name,
+		Email:      req.Email,
+		Password:   string(hash),
+		Phone:      utils.StringToPGText(req.Phone),
+		Address:    addressJSON,
+		WebsiteUrl: utils.StringToPGText(req.WebsiteURL),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert tenant: %w", err)
 	}
 
-	return tenant, nil
+	return &payload.Tenant{
+		ID:        tenant.ID.String(),
+		AccountID: tenant.AccountID,
+		Name:      tenant.Name,
+		Email:     tenant.Email,
+		Status:    tenant.Status,
+		CreatedAt: tenant.CreatedAt.Time.String(),
+	}, nil
 }
 
+// LoginTenant handles the tenant login process. It validates the incoming request, authenticates the tenant using the service layer, logs the login attempt for auditing,
+// and returns the authentication tokens if successful.
+//
+// params:
+// - ctx: The context for managing request-scoped values and cancellation.
+// - req: The payload containing tenant login details.
+//
+// returns:
+// - *payload.TenantAuthTokens: The authentication tokens.
+// - error: An error object if the operation fails, otherwise nil.
 func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (*payload.TenantAuthTokens, error) {
-	tenant, passwordHash, err := db.GetTenantByAccountID(ctx, req.AccountID)
+	tenant, err := internal.DB.GetTenantsByAccountID(ctx, req.AccountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("invalid credentials")
@@ -39,18 +82,33 @@ func LoginTenant(ctx context.Context, req *payload.TenantLoginRequest) (*payload
 		return nil, fmt.Errorf("failed to fetch tenant: %w", err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(tenant.Password), []byte(req.Password)); err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	if tenant.Status != db.TenantStatusActive {
+	if tenant.Status != enum.TenantStatusActive.String() {
 		return nil, fmt.Errorf("tenant account is not active")
 	}
 
-	return issueTenantTokenPair(ctx, tenant)
+	return issueTenantTokenPair(ctx, &payload.Tenant{
+		ID:        tenant.ID.String(),
+		AccountID: tenant.AccountID,
+		Name:      tenant.Name,
+		Email:     tenant.Email,
+		Status:    tenant.Status,
+	})
 }
 
-func issueTenantTokenPair(ctx context.Context, tenant *db.Tenant) (*payload.TenantAuthTokens, error) {
+// issueTenantTokenPair generates a new access token and refresh token for the authenticated tenant. It stores the refresh token in the database for future validation.
+//
+// params:
+// - ctx: The context for managing request-scoped values and cancellation.
+// - tenant: The authenticated tenant's details.
+//
+// returns:
+// - *payload.TenantAuthTokens: The generated authentication tokens.
+// - error: An error object if the operation fails, otherwise nil.
+func issueTenantTokenPair(ctx context.Context, tenant *payload.Tenant) (*payload.TenantAuthTokens, error) {
 	accessToken, err := utils.GenerateTenantToken(tenant.ID, tenant.AccountID, tenant.Name, tenant.Email, string(tenant.Status))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
@@ -62,7 +120,11 @@ func issueTenantTokenPair(ctx context.Context, tenant *db.Tenant) (*payload.Tena
 	}
 
 	tokenHash := sha256Hex(rawRefresh)
-	if err := db.InsertTenantRefreshToken(ctx, tenant.ID, tokenHash, expiresAt); err != nil {
+	if err := internal.DB.InsertTenantRefreshToken(ctx, sqlc.InsertTenantRefreshTokenParams{
+		TenantID:  utils.StringToPGUUID(tenant.ID),
+		TokenHash: tokenHash,
+		ExpiresAt: utils.TimeToPGTimestamptz(expiresAt),
+	}); err != nil {
 		return nil, fmt.Errorf("failed to store refresh token: %w", err)
 	}
 

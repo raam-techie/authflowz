@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"new-auth-service/internal/db"
 	"new-auth-service/internal/errutil"
 	"new-auth-service/internal/middleware"
@@ -27,8 +28,8 @@ func GetUser(c *gin.Context) {
 			panic(errutil.Internal(err.Error()))
 		}
 
-		c.JSON(200, payload.SuccessResponse{
-			StatusCode: 200,
+		c.JSON(http.StatusOK, payload.SuccessResponse{
+			StatusCode: http.StatusOK,
 			Message:    "User fetched successfully",
 			Data: []any{map[string]any{
 				"id":          user.ID,
@@ -67,8 +68,8 @@ func GetUser(c *gin.Context) {
 		})
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Users fetched successfully",
 		Data:       data,
 	})
@@ -122,8 +123,8 @@ func CreateUser(c *gin.Context) {
 		panic(errutil.Internal(err.Error()))
 	}
 
-	c.JSON(201, payload.SuccessResponse{
-		StatusCode: 201,
+	c.JSON(http.StatusCreated, payload.SuccessResponse{
+		StatusCode: http.StatusCreated,
 		Message:    "User created successfully",
 		Data: []any{map[string]any{
 			"id":          user.ID,
@@ -172,8 +173,8 @@ func SendEmailOTP(c *gin.Context) {
 		panic(errutil.Internal(err.Error()))
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "OTP sent successfully",
 		Data:       []any{},
 	})
@@ -211,8 +212,8 @@ func VerifyEmailOTP(c *gin.Context) {
 		panic(errutil.Internal(err.Error()))
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Login successful",
 		Data:       []any{token},
 	})
@@ -254,8 +255,8 @@ func UserLogin(c *gin.Context) {
 		panic(errutil.Internal(msg))
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Login successful",
 		Data:       []any{tokens},
 	})
@@ -302,8 +303,8 @@ func UpdateUserAttributes(c *gin.Context) {
 		panic(errutil.Internal(err.Error()))
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Attributes updated successfully",
 		Data:       []any{},
 	})
@@ -341,8 +342,8 @@ func RefreshToken(c *gin.Context) {
 		panic(errutil.Internal(msg))
 	}
 
-	c.JSON(200, payload.SuccessResponse{
-		StatusCode: 200,
+	c.JSON(http.StatusOK, payload.SuccessResponse{
+		StatusCode: http.StatusOK,
 		Message:    "Token refreshed successfully",
 		Data:       []any{tokens},
 	})
