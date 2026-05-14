@@ -3,6 +3,7 @@
 
 CREATE TABLE tenants (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id          INT NOT NULL,
     name                TEXT NOT NULL,
     email               TEXT NOT NULL,
     password            TEXT NOT NULL,
@@ -104,31 +105,26 @@ CREATE TABLE audit_logs (
     -- UUIDv7 is time-sortable: sorting by id == sorting by created_at
     -- Use pgcrypto gen_random_uuid() as fallback if UUIDv7 extension unavailable
     id                      UUID NOT NULL DEFAULT gen_random_uuid(),
- 
     tenant_id               UUID NOT NULL,
     -- actor_id nullable: system/scheduled jobs have no human actor
     actor_id                UUID,
     -- actor_type: 'user' | 'system' | 'api_key' | 'service_account'
     actor_type              TEXT NOT NULL,
- 
     -- namespaced action verb: "user.login.success", "pool.created", "client.secret_rotated"
     action                  TEXT NOT NULL,
- 
     -- what entity was acted on
     resource_type           TEXT NOT NULL,
     resource_id             UUID,
- 
     -- full diff for update events
     old_value               JSONB,
     new_value               JSONB,
- 
     -- request context
     ip_address              INET,
     user_agent              TEXT,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
  
-    -- email lookup (login / contact search)
+-- email lookup (login / contact search)
 CREATE UNIQUE INDEX idx_tenants_email
     ON tenants (email)
     WHERE deleted_at IS NULL;
