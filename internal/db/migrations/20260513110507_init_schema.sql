@@ -3,7 +3,7 @@
 
 CREATE TABLE tenants (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id          VARCHAR(200) NOT NULL,
+    account_id          VARCHAR(50) UNIQUE NOT NULL,
     name                TEXT NOT NULL,
     email               TEXT NOT NULL,
     password            TEXT NOT NULL,
@@ -83,10 +83,10 @@ CREATE TABLE users (
 CREATE TABLE verification_tokens (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id                 UUID REFERENCES users (id) ON DELETE CASCADE,
+    tenant_id               UUID REFERENCES tenants (id) ON DELETE CASCADE, -- which org this token belongs to
     -- SHA-256 hash of the raw one-time token sent to the user
     -- raw token is never stored; compare by hashing the submitted token
     token_hash              TEXT NOT NULL,
-    tenant_id               UUID REFERENCES tenants (id) ON DELETE CASCADE, -- which org this token belongs to
     app_client_id           UUID REFERENCES app_clients (id) ON DELETE SET NULL, -- which app client initiated the flow (SDK / web / mobile)
     type                    VARCHAR(200) NOT NULL,
     requested_from_ip       VARCHAR(100), -- ip that requested the token
