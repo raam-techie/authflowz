@@ -31,6 +31,9 @@ WORKDIR /root/
 # Copy the binary from builder
 COPY --from=builder /app/bin/auth-service .
 
+# Copy the .env file (make sure to include it in your build context and .dockerignore if necessary)
+COPY .env /app/bin/.env
+
 # Expose port (default is 8080)
 EXPOSE 8080
 
