@@ -5,13 +5,18 @@ phases:
       - echo Installing dependencies...
       - sudo apt update -y
       - sudo apt install -y curl bash
-    
+
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - aws --version
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-       # Extract Secrets
+      - echo Pulling the base images from ECR...
+      - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/golang:1.25.0-alpine
+      - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/golang:1.25.0-alpine golang:1.25.0-alpine
+      - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/alpine:latest
+      - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/alpine:latest alpine:latest
+      # Extract Secrets
       - echo "$SECRETS" | jq -r '.env' | base64 --decode > .env
       # Substitue Env Variables wherever necessary
       - envsubst < appspec.yaml > temp.yaml && mv temp.yaml appspec.yaml
@@ -35,3 +40,4 @@ artifacts:
     - imageDetail.json
     - taskdef.json
     - appspec.yaml
+    
