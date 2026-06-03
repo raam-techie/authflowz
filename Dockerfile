@@ -31,8 +31,8 @@ WORKDIR /root/
 # Copy the binary from builder
 COPY --from=builder /app/bin/auth-service .
 
-# Expose port (default is 8000)
-EXPOSE 8000
+# Expose port (default is 8080)
+EXPOSE 8080
 
 # Run the application
 CMD ["./auth-service"]
