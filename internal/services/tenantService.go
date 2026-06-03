@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	"new-auth-service/db"
-	"new-auth-service/payload"
-	"new-auth-service/utils"
+	"new-auth-service/internal/db"
+	"new-auth-service/internal/payload"
+	"new-auth-service/internal/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -72,4 +71,3 @@ func issueTenantTokenPair(ctx context.Context, tenant *db.Tenant) (*payload.Tena
 		RefreshToken: rawRefresh,
 	}, nil
 }
-
