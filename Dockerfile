@@ -1,41 +1,53 @@
-# Build stage
-FROM golang:1.25.0-alpine AS builder
+# Stage 1: Build the Go application
+FROM golang:1.25-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates
+# Set the working directory inside the container
+WORKDIR /server
 
-# Set working directory
-WORKDIR /app
-
-# Copy go mod and sum files
+# Copy go mod and sum files to leverage Docker cache
 COPY go.mod go.sum ./
 
-# Download dependencies
+# Download all dependencies. Dependencies will be cached if go.mod and go.sum are unchanged
 RUN go mod download
 
-# Copy the entire project
+# Copy the source code into the container
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o bin/auth-service ./main.go
+# Build the Go application
+RUN go build -o /server/app ./cmd/main.go
 
-# Final stage
-FROM alpine:latest
+# Stage 2: Final stage for production
+FROM alpine:latest AS production
 
-# Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates
+# Install tzdata package for time zone configuration
+RUN apk --no-cache add tzdata
 
-# Set working directory
-WORKDIR /root/
+# Set environment variable for the time zone, this will be used at runtime
+ENV TZ=Asia/Kolkata
 
-# Copy the binary from builder
+RUN echo $TZ
+
+# Configure the system's time zone using the TZ variable
+RUN cp /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Install curl for health checks. This is required.
+RUN apk --no-cache add curl
+
+# Set the working directory inside the container
+WORKDIR /server
+
+# Copy the built executable from the builder stage
 COPY --from=builder /server/app .
 
-# Copy the .env file (make sure to include it in your build context and .dockerignore if necessary)
-COPY .env /app/server/.env
+# Copy environment variables file to /server
+COPY .env /server/.env
 
-# Expose port (default is 8080)
+# Copy Email Templates to /server
+COPY templates /server/templates
+
+# Expose port 8080 to the outside world
 EXPOSE 8080
 
-# Run the application
-CMD ["./auth-service"]
+# Run the built application
+CMD ["./app"]
+
