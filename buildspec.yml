@@ -34,7 +34,8 @@ phases:
       - echo Pushing Docker image to repository...
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest
       - echo Writing image definitions file...
-      - printf '{"ImageURI":"%s"}' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest > imageDetail.json
+      - printf '[{"name":"auth-service","imageUri":"%s"}]' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest > imageDetail.json
+
 artifacts:
   files:
     - imageDetail.json
