@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o /server/app ./cmd/main.go
+RUN go build -o /server/app ./main.go
 
 # Stage 2: Final stage for production
 FROM alpine:latest AS production
