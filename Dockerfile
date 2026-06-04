@@ -29,10 +29,10 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Copy the binary from builder
-COPY --from=builder /app/bin/auth-service .
+COPY --from=builder /server/app .
 
 # Copy the .env file (make sure to include it in your build context and .dockerignore if necessary)
-COPY .env /app/bin/.env
+COPY .env /app/server/.env
 
 # Expose port (default is 8080)
 EXPOSE 8080
