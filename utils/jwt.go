@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -23,19 +22,7 @@ type TenantClaims struct {
 	jwt.RegisteredClaims
 }
 
-func jwtSecret() ([]byte, error) {
-	s := os.Getenv("JWT_SECRET")
-	if s == "" {
-		return nil, fmt.Errorf("JWT_SECRET environment variable is not set")
-	}
-	return []byte(s), nil
-}
-
 func GenerateTenantToken(tenantID, accountID, name, email, status string) (string, error) {
-	secret, err := jwtSecret()
-	if err != nil {
-		return "", err
-	}
 
 	claims := TenantClaims{
 		TenantID:  tenantID,
@@ -50,7 +37,7 @@ func GenerateTenantToken(tenantID, accountID, name, email, status string) (strin
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secret)
+	return token.SignedString("flipopay-auth-secret-key-32chars!!")
 }
 
 type UserClaims struct {
@@ -66,20 +53,16 @@ type UserClaims struct {
 }
 
 func GenerateUserToken(userID, tenantID, appClientID, uid, name, email, role string, custom map[string]string) (string, error) {
-	secret, err := jwtSecret()
-	if err != nil {
-		return "", err
-	}
 
 	claims := UserClaims{
 		UserID:      userID,
 		TenantID:    tenantID,
 		AppClientID: appClientID,
 		UID:         uid,
-		Name:      name,
-		Email:     email,
-		Role:      role,
-		Custom:    custom,
+		Name:        name,
+		Email:       email,
+		Role:        role,
+		Custom:      custom,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(userTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -87,7 +70,7 @@ func GenerateUserToken(userID, tenantID, appClientID, uid, name, email, role str
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secret)
+	return token.SignedString("flipopay-auth-secret-key-32chars!!")
 }
 
 // GenerateRefreshToken returns a raw opaque token and its expiry time.
