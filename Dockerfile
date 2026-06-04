@@ -42,9 +42,6 @@ COPY --from=builder /server/app .
 # Copy environment variables file to /server
 COPY .env /server/.env
 
-# Copy Email Templates to /server
-COPY templates /server/templates
-
 # Expose port 8080 to the outside world
 EXPOSE 8080
 
