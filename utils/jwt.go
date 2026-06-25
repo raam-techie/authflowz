@@ -37,7 +37,7 @@ func GenerateTenantToken(tenantID, accountID, name, email, status string) (strin
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString("flipopay-auth-secret-key-32chars!!")
+	return token.SignedString([]byte("flipopay-auth-secret-key-32chars!!"))
 }
 
 type UserClaims struct {
@@ -70,7 +70,7 @@ func GenerateUserToken(userID, tenantID, appClientID, uid, name, email, role str
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString("flipopay-auth-secret-key-32chars!!")
+	return token.SignedString([]byte("flipopay-auth-secret-key-32chars!!"))
 }
 
 // GenerateRefreshToken returns a raw opaque token and its expiry time.
