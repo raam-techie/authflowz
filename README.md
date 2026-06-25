@@ -1,6 +1,6 @@
 # Auth Service
 
-A lightweight authentication and identity management service for the Flipopay backend. It supports tenant onboarding, user pool creation, app client registration, and authenticated user management.
+A lightweight authentication and identity management service for the opensource backend. It supports tenant onboarding, user pool creation, app client registration, and authenticated user management.
 
 ## What this project does
 
