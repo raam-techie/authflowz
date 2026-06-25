@@ -1,2 +1,6 @@
 #env files
 .env
+
+.claude
+.vscode
+
