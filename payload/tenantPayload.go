@@ -6,7 +6,8 @@ type TenantAuthTokens struct {
 }
 
 type TenantLoginRequest struct {
-	AccountID string `json:"accountId" binding:"required"`
+	Email     string `json:"email" binding:"omitempty,email"`
+	AccountID string `json:"accountId"`
 	Password  string `json:"password"  binding:"required"`
 }
 

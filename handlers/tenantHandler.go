@@ -38,7 +38,7 @@ func TenantLogin(c *gin.Context) {
 	var req payload.TenantLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(errutil.BadRequest(err.Error()))
-	}
+	}ß
 
 	tokens, err := services.LoginTenant(c.Request.Context(), &req)
 
