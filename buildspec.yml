@@ -1,0 +1,44 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - echo Installing dependencies...
+      - sudo apt update -y
+      - sudo apt install -y curl bash
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - echo Pulling the base images from ECR...
+      - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/golang:1.25.0-alpine
+      - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/golang:1.25.0-alpine golang:1.25.0-alpine
+      - docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/alpine:latest
+      - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/alpine:latest alpine:latest
+      # Extract Secrets
+      - echo "$SECRETS" | jq -r '.env' | base64 --decode > .env
+      # Substitue Env Variables wherever necessary
+      - envsubst < appspec.yaml > temp.yaml && mv temp.yaml appspec.yaml
+      - envsubst < taskdef.json > temp.json && mv temp.json taskdef.json
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t auth-service .
+      - docker tag auth-service:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing Docker image to repository...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest
+      - echo Writing image definitions file...
+      - printf '[{"name":"auth-service","imageUri":"%s"}]' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest > imageDetail.json
+
+artifacts:
+  files:
+    - imageDetail.json
+    - taskdef.json
+    - appspec.yaml
+    

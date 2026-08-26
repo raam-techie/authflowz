@@ -6,17 +6,11 @@ import (
 
 	"new-auth-service/db"
 	"new-auth-service/server"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
-	}
 
-	databaseURL := os.Getenv("DATABASE_URL")
-	if _, err := db.Connect(databaseURL); err != nil {
+	if _, err := db.Connect("postgresql://postgres.jwubnrczhvebyggmwonu:CoralBay%401234!@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"); err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close(db.DB)
@@ -29,7 +23,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8000"
+		port = "8080"
 	}
 
 	log.Printf("Server is running on port %s", port)
